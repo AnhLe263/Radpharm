@@ -33,16 +33,14 @@
 
 class G4VPhysicalVolume;
 class G4LogicalVolume;
-
-namespace B1
-{
+class G4GenericMessenger;
 
 /// Detector construction class to define materials and geometry.
 
 class DetectorConstruction : public G4VUserDetectorConstruction
 {
   public:
-    DetectorConstruction() = default;
+    DetectorConstruction();
     ~DetectorConstruction() override = default;
 
     G4VPhysicalVolume* Construct() override;
@@ -51,9 +49,11 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
   protected:
     G4LogicalVolume* fScoringVolume = nullptr;
+    G4double targetSizeZ = 1.0;
+    G4GenericMessenger* fMessenger;
 };
 
-}  // namespace B1
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 

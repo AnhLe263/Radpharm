@@ -35,8 +35,7 @@ class G4ParticleGun;
 class G4Event;
 class G4Box;
 
-namespace B1
-{
+
 
 /// The primary generator action class with particle gun.
 ///
@@ -60,7 +59,7 @@ class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
     G4Box* fEnvelopeBox = nullptr;
 };
 
-}  // namespace B1
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 

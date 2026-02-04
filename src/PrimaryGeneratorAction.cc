@@ -36,8 +36,7 @@
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
 
-namespace B1
-{
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -90,4 +89,3 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-}  // namespace B1

@@ -35,9 +35,8 @@
 #include "G4LogicalVolume.hh"
 #include "G4RunManager.hh"
 #include "G4Step.hh"
+#include "G4AnalysisManager.hh"
 
-namespace B1
-{
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -63,8 +62,20 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
   // collect energy deposited in this step
   G4double edepStep = step->GetTotalEnergyDeposit();
   fEventAction->AddEdep(edepStep);
+
+  const auto* secondaries = step->GetSecondaryInCurrentStep();
+  if (secondaries->size()>0) {
+    auto analysisManager = G4AnalysisManager::Instance();
+
+    for (const auto* track : *secondaries)
+    {
+        G4String name = track->GetDefinition()->GetParticleName();
+        analysisManager->FillNtupleSColumn(0, name);
+        analysisManager->AddNtupleRow();
+    }
+  }
+
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-}  // namespace B1

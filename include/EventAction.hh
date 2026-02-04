@@ -34,8 +34,7 @@
 
 class G4Event;
 
-namespace B1
-{
+
 
 class RunAction;
 
@@ -57,7 +56,7 @@ class EventAction : public G4UserEventAction
     G4double fEdep = 0.;
 };
 
-}  // namespace B1
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 

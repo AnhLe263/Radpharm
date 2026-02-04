@@ -37,8 +37,6 @@
 #include "G4VisExecutive.hh"
 // #include "Randomize.hh"
 
-using namespace B1;
-
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 int main(int argc, char** argv)

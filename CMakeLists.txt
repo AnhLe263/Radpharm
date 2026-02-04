@@ -31,8 +31,7 @@ target_link_libraries(Radpharm PRIVATE ${Geant4_LIBRARIES})
 #
 set(Radpharm_SCRIPTS
   init_vis.mac
-  run1.mac
-  run2.mac
+  run.mac
   vis.mac
   )
 

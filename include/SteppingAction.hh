@@ -34,8 +34,7 @@
 class G4LogicalVolume;
 class G4Step;
 
-namespace B1
-{
+
 
 class EventAction;
 
@@ -55,7 +54,7 @@ class SteppingAction : public G4UserSteppingAction
     G4LogicalVolume* fScoringVolume = nullptr;
 };
 
-}  // namespace B1
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 

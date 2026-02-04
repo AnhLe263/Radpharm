@@ -39,9 +39,8 @@
 #include "G4RunManager.hh"
 #include "G4SystemOfUnits.hh"
 #include "G4UnitsTable.hh"
+#include "G4AnalysisManager.hh"
 
-namespace B1
-{
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -63,6 +62,10 @@ RunAction::RunAction()
   G4AccumulableManager* accumulableManager = G4AccumulableManager::Instance();
   accumulableManager->Register(fEdep);
   accumulableManager->Register(fEdep2);
+
+  auto analysisManager = G4AnalysisManager::Instance();
+  analysisManager->SetVerboseLevel(1);
+  analysisManager->SetNtupleMerging(true);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -75,12 +78,22 @@ void RunAction::BeginOfRunAction(const G4Run*)
   // reset accumulables to their initial values
   G4AccumulableManager* accumulableManager = G4AccumulableManager::Instance();
   accumulableManager->Reset();
+
+  auto analysisManager = G4AnalysisManager::Instance();
+  analysisManager->OpenFile("Out.root");
+  analysisManager->CreateNtuple("Products", "Secondary particles");
+  analysisManager->CreateNtupleSColumn("name");
+  analysisManager->FinishNtuple();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void RunAction::EndOfRunAction(const G4Run* run)
 {
+  auto analysisManager = G4AnalysisManager::Instance();
+  analysisManager->Write();
+  analysisManager->CloseFile();
+
   G4int nofEvents = run->GetNumberOfEvent();
   if (nofEvents == 0) return;
 
@@ -147,4 +160,3 @@ void RunAction::AddEdep(G4double edep)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-}  // namespace B1

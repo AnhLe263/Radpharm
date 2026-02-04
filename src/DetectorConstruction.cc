@@ -36,10 +36,14 @@
 #include "G4SystemOfUnits.hh"
 #include "G4Trd.hh"
 #include "G4Element.hh"
+#include "G4GenericMessenger.hh"
 
-namespace B1
+
+DetectorConstruction::DetectorConstruction():G4VUserDetectorConstruction()
 {
-
+  fMessenger = new G4GenericMessenger(this,"/target/","");
+  fMessenger->DeclarePropertyWithUnit("thickness","mm",targetSizeZ,"");
+}
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 G4VPhysicalVolume* DetectorConstruction::Construct()
@@ -49,7 +53,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   // some needed material
   //Ni-64:
   G4double a = 63.927966*g/mole;
-  G4Isotope* isoNi64 = new G4Isotope("Ni64", 28, 36, a);
+  G4Isotope* isoNi64 = new G4Isotope("Ni64", 28, 64, a);
   G4Element* elNi64  = new G4Element("Ni64","Ni64" , 1);
   elNi64->AddIsotope(isoNi64,100.*perCent);
   G4double density = 8.907*g/cm3;
@@ -59,7 +63,6 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   // Envelope parameters
   //
   G4double env_sizeXY = 20 * cm, env_sizeZ = 30 * cm;
-  G4Material* env_mat = nist->FindOrBuildMaterial("G4_WATER");
 
   // Option to switch on/off checking of volumes overlaps
   //
@@ -93,7 +96,8 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
   // Target
 
-  G4double targetSizeXY = 1.0*cm, targetSizeZ = 1.0*mm;
+  G4double targetSizeXY = 1.0*cm;
+  G4cout<<" == > Target thickness = "<<targetSizeZ/mm<<"mm"<<G4endl;
   auto solidTarget =
     new G4Box("Target",targetSizeXY/2.,targetSizeXY/2.,targetSizeZ/2.);  
 
@@ -123,5 +127,3 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
-
-}  // namespace B1
