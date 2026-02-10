@@ -35,6 +35,7 @@
 #include "G4ParticleTable.hh"
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
+#include "G4Event.hh"
 
 
 
@@ -65,26 +66,22 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction()
 
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event)
 {
-  // this function is called at the begining of ecah event
-  //
-
-  // In order to avoid dependence of PrimaryGeneratorAction
-  // on DetectorConstruction class we get Envelope volume
-  // from G4LogicalVolumeStore.
-
-  G4double envSizeXY = 0.1*cm;
-  G4double envSizeZ = 5*cm;
-
-  
-
-  G4double size = 0.8;
-  G4double x0 = size * envSizeXY * (G4UniformRand() - 0.5);
-  G4double y0 = size * envSizeXY * (G4UniformRand() - 0.5);
-  G4double z0 = -0.5 * envSizeZ;
-
-  fParticleGun->SetParticlePosition(G4ThreeVector(x0, y0, z0));
-
-  fParticleGun->GeneratePrimaryVertex(event);
+  G4double* theXY = new G4double[2];
+  for (int i=0;i<fnParticlePerEvent;i++) {
+    //pos
+     G4double z0 = -5*cm;
+    
+    G4RandGauss::shootArray(2,theXY,0.0,fFWHM/2.355);
+    G4ThreeVector beamPos(theXY[0],theXY[1],z0);
+    
+    auto vertex = new G4PrimaryVertex(beamPos, 0);
+    auto p = new G4PrimaryParticle(fParticleGun->GetParticleDefinition());
+    vertex->SetPrimary(p);
+    p->SetKineticEnergy(fParticleGun->GetParticleEnergy());
+    //G4cout<<"Engery --> "<<fParticleGun->GetParticleEnergy()/MeV<<G4endl;
+    event->AddPrimaryVertex(vertex);
+  }
+  delete[] theXY;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
