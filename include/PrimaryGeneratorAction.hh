@@ -60,7 +60,7 @@ class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
     G4Box* fEnvelopeBox = nullptr;
     
     G4int fnParticlePerEvent =1;
-    G4double fFWHM = 0.1*cm;
+    G4double fFWHM = 0.01*cm;
 };
 
 
