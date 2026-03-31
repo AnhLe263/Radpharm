@@ -59,7 +59,7 @@ class PrimaryGeneratorAction : public G4VUserPrimaryGeneratorAction
     G4ParticleGun* fParticleGun = nullptr;  // pointer a to G4 gun class
     G4Box* fEnvelopeBox = nullptr;
     
-    G4int fnParticlePerEvent =1;
+    G4int fnParticlePerEvent =1000;
     G4double fFWHM = 0.01*cm;
 };
 

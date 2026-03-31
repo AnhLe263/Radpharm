@@ -78,7 +78,7 @@ void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event)
     auto p = new G4PrimaryParticle(fParticleGun->GetParticleDefinition());
     vertex->SetPrimary(p);
     p->SetKineticEnergy(fParticleGun->GetParticleEnergy());
-    //G4cout<<"Engery --> "<<fParticleGun->GetParticleEnergy()/MeV<<G4endl;
+    G4cout<<"Engery --> "<<fParticleGun->GetParticleEnergy()/MeV<<G4endl;
     event->AddPrimaryVertex(vertex);
   }
   delete[] theXY;

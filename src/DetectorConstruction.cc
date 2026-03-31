@@ -59,6 +59,16 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   G4double density = 8.907*g/cm3;
   G4Material* Ni64 = new G4Material("Ni64", density, 1);
   Ni64->AddElement(elNi64, 1);
+
+   //Ni-Zn68:
+  a = 67.9248*g/mole;
+  G4Isotope* isoZn68 = new G4Isotope("Zn68", 30, 68, a);
+  G4Element* elZn68  = new G4Element("Zn68","Zn68" , 1);
+  elZn68->AddIsotope(isoZn68,100.*perCent);
+  density = 7.14*g/cm3;
+  G4Material* Zn68 = new G4Material("Zn68", density, 1);
+  Zn68->AddElement(elZn68, 1);
+
   
   // Envelope parameters
   //
@@ -102,7 +112,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
     new G4Box("Target",targetSizeXY/2.,targetSizeXY/2.,targetSizeZ/2.);  
 
   auto logicTarget = new G4LogicalVolume(solidTarget,  // its solid
-                                         Ni64,  // its material
+                                         Zn68,  // its material
                                          "Target");  // its name
 
   new G4PVPlacement(nullptr,  // no rotation
