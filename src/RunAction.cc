@@ -114,9 +114,14 @@ void RunAction::EndOfRunAction(const G4Run* run)
 
   const auto detConstruction = static_cast<const DetectorConstruction*>(
     G4RunManager::GetRunManager()->GetUserDetectorConstruction());
-  G4double mass = detConstruction->GetScoringVolume()->GetMass();
-  G4double dose = edep / mass;
-  G4double rmsDose = rms / mass;
+  G4double dose = 0., rmsDose = 0.;
+  G4double mass = 0.;
+  if (detConstruction->GetScoringVolume()) {
+    mass = detConstruction->GetScoringVolume()->GetMass();
+    dose = edep / mass;
+    rmsDose = rms / mass;
+  }
+  
 
   // Run conditions
   //  note: There is no primary generator action object for "master"

@@ -30,6 +30,7 @@
 #define B1DetectorConstruction_h 1
 
 #include "G4VUserDetectorConstruction.hh"
+#include "G4UnionSolid.hh"
 
 class G4VPhysicalVolume;
 class G4LogicalVolume;
@@ -48,7 +49,11 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4LogicalVolume* GetScoringVolume() const { return fScoringVolume; }
 
   protected:
+    void ConstructTargetChameber();
+    G4UnionSolid* BuildSolidUnionTwo(G4double h, G4double r);
+    G4bool fUsingTargetChamber{true};
     G4LogicalVolume* fScoringVolume = nullptr;
+    G4LogicalVolume* fLogicWorld = nullptr;
     G4double targetSizeZ = 1.0;
     G4GenericMessenger* fMessenger;
 };
