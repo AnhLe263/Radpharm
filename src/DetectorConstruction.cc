@@ -291,13 +291,14 @@ G4Material* DetectorConstruction::DefineLiquidTargetMaterial() {
     G4Material* H2O = nist->FindOrBuildMaterial("G4_WATER");
 
     // 3. Create the Final Liquid Target Solution
-    // Example: 5% Ni(NO3)2, 5% HNO3, 90% H2O (Adjust based on chemistry): Hieu Kiem tra
-    G4double solutionDensity = 1.10*g/cm3; // Estimated density of the mixture
+    // Target: 100mg Ni-64 in 2ml solution (~2200mg total)
+    // Calculated Mass Fraction for Ni(NO3)2 is 13.35%
+    G4double solutionDensity = 1.15*g/cm3; // Estimated density of the mixture
     G4Material* targetSolution = new G4Material("TargetSolution", solutionDensity, nComponents=3);
     
-    targetSolution->AddMaterial(NiNO3_2, 5.0*perCent);   // Ni(NO3)2: 5%
+    targetSolution->AddMaterial(NiNO3_2, 13.35*perCent);   // Ni(NO3)2: 13.35% ; Hieu kiem tra
     targetSolution->AddMaterial(HNO3,    2.0*perCent);   // Typical low concentration
-    targetSolution->AddMaterial(H2O,     93.0*perCent);  // Remaining is water
+    targetSolution->AddMaterial(H2O,     84.65*perCent);  // Remaining is water
     return targetSolution;
 }
 
