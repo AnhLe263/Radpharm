@@ -36,6 +36,7 @@
 #include "G4SystemOfUnits.hh"
 #include "Randomize.hh"
 #include "G4Event.hh"
+#include "G4GeneralParticleSource.hh"
 
 
 
@@ -43,16 +44,7 @@
 
 PrimaryGeneratorAction::PrimaryGeneratorAction()
 {
-  G4int n_particle = 1;
-  fParticleGun = new G4ParticleGun(n_particle);
-
-  // default particle kinematic
-  G4ParticleTable* particleTable = G4ParticleTable::GetParticleTable();
-  G4String particleName;
-  G4ParticleDefinition* particle = particleTable->FindParticle(particleName = "gamma");
-  fParticleGun->SetParticleDefinition(particle);
-  fParticleGun->SetParticleMomentumDirection(G4ThreeVector(0., 0., 1.));
-  fParticleGun->SetParticleEnergy(6. * MeV);
+  fParticleGun = new G4GeneralParticleSource();
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -66,22 +58,28 @@ PrimaryGeneratorAction::~PrimaryGeneratorAction()
 
 void PrimaryGeneratorAction::GeneratePrimaries(G4Event* event)
 {
-  G4double* theXY = new G4double[2];
-  for (int i=0;i<fnParticlePerEvent;i++) {
-    //pos
-     G4double z0 = -5*cm;
-    
-    G4RandGauss::shootArray(2,theXY,0.0,fFWHM/2.355);
-    G4ThreeVector beamPos(theXY[0],theXY[1],z0);
-    
-    auto vertex = new G4PrimaryVertex(beamPos, 0);
-    auto p = new G4PrimaryParticle(fParticleGun->GetParticleDefinition());
-    vertex->SetPrimary(p);
-    p->SetKineticEnergy(fParticleGun->GetParticleEnergy());
-    //G4cout<<"Engery --> "<<fParticleGun->GetParticleEnergy()/MeV<<G4endl;
-    event->AddPrimaryVertex(vertex);
+  /*
+  G4SPSPosDistribution* posDist = fParticleGun->GetCurrentSource()->GetPosDist();
+  posDist->SetPosDisType("Beam"); 
+  posDist->SetPosDisShape("Circle");
+  
+  // Use Sigma instead of Radius to create a Gaussian distribution
+  // For a target with r = 8.5 mm, a sigma of 3.0 mm ensures 
+  // most particles hit the center and stay within the chamber.
+  posDist->SetBeamSigmaInR(3.0 * mm); 
+  
+  posDist->SetCentreCoords(G4ThreeVector(0., 0., -5. * mm));
+
+  G4SPSAngDistribution* angDist = fParticleGun->GetCurrentSource()->GetAngDist();
+  angDist->SetParticleMomentumDirection(G4ThreeVector(0., 0., 1.));
+
+  G4SPSEneDistribution* eneDist = fParticleGun->GetCurrentSource()->GetEneDist();
+  eneDist->SetEnergyDisType("Mono");
+  eneDist->SetMonoEnergy(15.0 * MeV);
+  */
+  for (G4int i = 0; i < fnParticlePerEvent; i++) {
+      fParticleGun->GeneratePrimaryVertex(event);
   }
-  delete[] theXY;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

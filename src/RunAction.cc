@@ -94,6 +94,7 @@ void RunAction::EndOfRunAction(const G4Run* run)
   analysisManager->Write();
   analysisManager->CloseFile();
 
+  /*
   G4int nofEvents = run->GetNumberOfEvent();
   if (nofEvents == 0) return;
 
@@ -130,7 +131,7 @@ void RunAction::EndOfRunAction(const G4Run* run)
     G4RunManager::GetRunManager()->GetUserPrimaryGeneratorAction());
   G4String runCondition;
   if (generatorAction) {
-    const G4ParticleGun* particleGun = generatorAction->GetParticleGun();
+    const auto* particleGun = generatorAction->GetParticleGun();
     runCondition += particleGun->GetParticleDefinition()->GetParticleName();
     runCondition += " of ";
     G4double particleEnergy = particleGun->GetParticleEnergy();
@@ -153,6 +154,7 @@ void RunAction::EndOfRunAction(const G4Run* run)
   G4cout << " Absorbed dose per run in scoring volume = edep/mass = " << G4BestUnit(dose, "Dose")
          << "; rms = " << G4BestUnit(rmsDose, "Dose") << G4endl
          << "------------------------------------------------------------" << G4endl << G4endl;
+  */
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

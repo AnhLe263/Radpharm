@@ -120,3 +120,20 @@
 #
 # For file-based drivers, use this to create an empty detector view:
 #/vis/viewer/flush
+
+/gps/particle proton
+
+# Position distribution: Gaussian Beam
+/gps/pos/type Beam
+/gps/pos/shape Circle
+/gps/pos/centre 0. 0. -5. mm
+# Sigma = 3.0mm covers ~95% within the 8.5mm target radius
+/gps/pos/sigma_r 3.0 mm
+
+# Angular distribution: Focused along Z-axis
+/gps/ang/type beam1d
+/gps/direction 0 0 1
+
+# Energy distribution: Mono-energetic
+/gps/ene/type Mono
+/gps/ene/mono 15.0 MeV
