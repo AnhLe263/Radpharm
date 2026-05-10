@@ -71,7 +71,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   density = 7.14*g/cm3;
   G4Material* Zn68 = new G4Material("Zn68", density, 1);
   Zn68->AddElement(elZn68, 1);
-
+  
   
   // Envelope parameters
   //
@@ -147,8 +147,11 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
 void DetectorConstruction::ConstructTargetChameber()
 {
-  G4double Nb_h = 5*mm;
-  G4double Nb_r = 2*mm;
+  G4double fTargetChamber_h = 3.14 *mm;
+  G4double fTargetChamber_r = 8.5 *mm;
+  G4double Nb_thickness = 3*mm;
+  G4double Nb_h = fTargetChamber_h + Nb_thickness;
+  G4double Nb_r = fTargetChamber_r + Nb_thickness;
   G4double TasizeXY = 2*Nb_r*1.1;
   G4double TasizeZ = 75. *um;
    G4double HavarsizeXY = 2*Nb_r*1.1;
@@ -201,6 +204,7 @@ void DetectorConstruction::ConstructTargetChameber()
   auto logicNb = new G4LogicalVolume(Nb_solid,  // its solid
                                           Nb,  // its material
                                           "Nblayer");  // its name
+
   new G4PVPlacement(nullptr,  // no rotation
                     Nb_pos,  // at position
                     logicNb,  // its logical volume
@@ -209,20 +213,93 @@ void DetectorConstruction::ConstructTargetChameber()
                     false,  // no boolean operation
                     0,  // copy number
                     true);  // overlaps checking
+  
+  // Phan chua chat long gay pha ung
+  // Calculate the Z position to align the front surfaces
+  // Both solids have their "front" at -0.5*h
+  G4double zOffset = -0.5 * Nb_h + 0.5 * fTargetChamber_h;  
+  G4ThreeVector posTarget(0, 0, zOffset);
+  auto fTargetSolution =  DefineLiquidTargetMaterial();
+  auto targetSolution_solid = BuildSolidUnionTwo(fTargetChamber_h,fTargetChamber_r);
+  auto logicTargetSolution = new G4LogicalVolume(targetSolution_solid,  // its solid
+                                          fTargetSolution,  // its material
+                                          "TargetSolution");  // its name
+  new G4PVPlacement(nullptr,  // no rotation
+                    posTarget,  // at position
+                    logicTargetSolution,  // its logical volume
+                    "TargetSolution",  // its name
+                    logicNb,  // its mother  volume
+                    false,  // no boolean operation
+                    0,  // copy number
+                    true);  // overlaps checking
+
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 G4UnionSolid* DetectorConstruction::BuildSolidUnionTwo(G4double h, G4double r)
 {
+  // Create the cylindrical part
   G4Tubs* cyl = new G4Tubs("Cylinder",0,r,0.5*h,0,360*deg);
+  // Create the hemispherical part (half-sphere)
   auto* sphere = new G4Sphere("Sphere",0,r,0,180*deg,0,180*deg);
+  // Define rotation for the hemisphere to align with the cylinder's bottom
   G4RotationMatrix* Rot = new G4RotationMatrix;  // Rotates X and Z axes only
-  Rot->rotateX(-90*deg);                     // Rotates 45 degrees
+  Rot->rotateX(-90*deg);    
+  // Translation to place the hemisphere at the end of the cylinder (z = -h/2 or h/2 depending on orientation)                 // Rotates 45 degrees
   G4ThreeVector zTrans(0, 0, h*0.5);
-
+  // Combine the shapes into a single solid
   G4UnionSolid* unionShape = new G4UnionSolid("Cylinder+Sphere", cyl,sphere,Rot,zTrans);
   return unionShape;
 }
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+G4Material* DetectorConstruction::DefineLiquidTargetMaterial() {
+    G4NistManager* nist = G4NistManager::Instance();
+
+    // 1. Define Elements and Isotopes
+    G4double z, a, density;
+    G4String name, symbol;
+    G4int nComponents, nAtoms;
+
+    // Define Enriched Nickel-64
+    G4Isotope* iso_Ni64 = new G4Isotope(name="Ni64", z=28, a=64, density=63.9280*g/mole);
+    G4Element* elEnrichedNi = new G4Element(name="EnrichedNi", symbol="Ni", nComponents=1);
+    elEnrichedNi->AddIsotope(iso_Ni64, 100.*perCent);
+
+    // Get other elements from NIST
+    G4Element* elH = nist->FindOrBuildElement("H");
+    G4Element* elN = nist->FindOrBuildElement("N");
+    G4Element* elO = nist->FindOrBuildElement("O");
+
+    // 2. Define Components of the solution
+    
+    // Nickel Nitrate: Ni(NO3)2
+    G4Material* NiNO3_2 = new G4Material("NickelNitrate", density=2.05*g/cm3, nComponents=3);
+    NiNO3_2->AddElement(elEnrichedNi, nAtoms=1);
+    NiNO3_2->AddElement(elN, nAtoms=2);
+    NiNO3_2->AddElement(elO, nAtoms=6);
+
+    // Nitric Acid: HNO3 (Assume 1.51 g/cm3 for pure, but we use mass fraction later)
+    G4Material* HNO3 = new G4Material("NitricAcid", density=1.51*g/cm3, nComponents=3);
+    HNO3->AddElement(elH, nAtoms=1);
+    HNO3->AddElement(elN, nAtoms=1);
+    HNO3->AddElement(elO, nAtoms=3);
+
+    // Water: H2O
+    G4Material* H2O = nist->FindOrBuildMaterial("G4_WATER");
+
+    // 3. Create the Final Liquid Target Solution
+    // Example: 5% Ni(NO3)2, 5% HNO3, 90% H2O (Adjust based on chemistry): Hieu Kiem tra
+    G4double solutionDensity = 1.10*g/cm3; // Estimated density of the mixture
+    G4Material* targetSolution = new G4Material("TargetSolution", solutionDensity, nComponents=3);
+    
+    targetSolution->AddMaterial(NiNO3_2, 5.0*perCent);   // Ni(NO3)2: 5%
+    targetSolution->AddMaterial(HNO3,    2.0*perCent);   // Typical low concentration
+    targetSolution->AddMaterial(H2O,     93.0*perCent);  // Remaining is water
+    return targetSolution;
+}
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

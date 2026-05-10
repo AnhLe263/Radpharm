@@ -35,6 +35,7 @@
 class G4VPhysicalVolume;
 class G4LogicalVolume;
 class G4GenericMessenger;
+class G4Material;
 
 /// Detector construction class to define materials and geometry.
 
@@ -51,6 +52,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
   protected:
     void ConstructTargetChameber();
     G4UnionSolid* BuildSolidUnionTwo(G4double h, G4double r);
+    G4Material* DefineLiquidTargetMaterial();
     G4bool fUsingTargetChamber{true};
     G4LogicalVolume* fScoringVolume = nullptr;
     G4LogicalVolume* fLogicWorld = nullptr;
