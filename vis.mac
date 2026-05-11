@@ -69,6 +69,7 @@
 # To select or override default colours (note: e+ is blue by default):
 #/vis/modeling/trajectories/list
 #/vis/modeling/trajectories/drawByParticleID-0/set e+ yellow
+#/vis/modeling/trajectories/drawByParticleID-0/set proton black
 #
 # To superimpose all of the events from a given run:
 /vis/scene/endOfEventAction accumulate
@@ -85,7 +86,7 @@
 #
 # Axes, scale, etc.
 #/vis/scene/add/scale   # Simple scale line
-/vis/scene/add/axes    0 0 0 1 cm # Simple axes: x=red, y=green, z=blue.
+/vis/scene/add/axes    0 0 0 2 cm # Simple axes: x=red, y=green, z=blue.
 #/vis/scene/add/eventID # Drawn at end of event
 #/vis/scene/add/date    # Date stamp
 #/vis/scene/add/logo2D  # Simple logo
@@ -107,12 +108,25 @@
 # Make the "World" box invisible
 /vis/geometry/set/visibility World 0 false
 # "Envelope" is transparent blue to represent water
+/vis/viewer/set/background white
 /vis/geometry/set/colour Envelope 0 0 0 1 .3
-/vis/geometry/set/colour Nblayer 0.5 1 0.5 1 .3
-#/vis/geometry/set/colour Talayer 1 1 0 0 .8
+# 1. Titanium Protective Foil - Chuyển sang Xanh biển đậm (Deep Blue)
+/vis/geometry/set/colour Tilayer 0 0.0 0.0 0.8 0.8
+# 2. Helium Cooling Gap - Xanh lá nhạt (Pale Green) 
+# Để rất trong suốt để phân biệt với các lá kim loại
+/vis/geometry/set/colour Helayer 0 0.0 1.0 0.0 0.4
+# 3. Havar Pressure Foil - Cam cháy (Burnt Orange/Brown)
+/vis/geometry/set/colour Havarlayer 0 0.7 0.3 0.0 0.7
+# 4. Niobium Target Body - Xám thép trung bình (Steel Gray)
+/vis/geometry/set/colour Nblayer 0 0.4 0.4 0.4 0.6
+# 5. Target Solution - Đỏ tưoi
+/vis/geometry/set/colour TargetSolution 0 1.0 0.0 0.0 1.0
+#/vis/viewer/set/sectionPlane on 0 0 0 mm 1 0 0
 /vis/viewer/set/style surface
 /vis/viewer/set/hiddenMarker true
 /vis/viewer/set/viewpointThetaPhi 120 150
+/vis/viewer/set/lineSegmentsPerCircle 100
+/vis/viewer/set/auxiliaryEdge false
 #
 # Re-establish auto refreshing and verbosity:
 /vis/viewer/set/autoRefresh true

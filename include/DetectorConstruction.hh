@@ -50,9 +50,11 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4LogicalVolume* GetScoringVolume() const { return fScoringVolume; }
 
   protected:
-    void ConstructTargetChameber();
+    void ConstructTargetChamber();
     G4UnionSolid* BuildSolidUnionTwo(G4double h, G4double r);
     G4Material* DefineLiquidTargetMaterial();
+    G4Material* DefineHavarMaterial();
+    G4Material* DefineHeliumGas();
     G4bool fUsingTargetChamber{true};
     G4LogicalVolume* fScoringVolume = nullptr;
     G4LogicalVolume* fLogicWorld = nullptr;

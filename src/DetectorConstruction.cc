@@ -110,7 +110,7 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
   // Target
   G4LogicalVolume *logicTarget = nullptr;
   if (fUsingTargetChamber) {
-    ConstructTargetChameber();
+    ConstructTargetChamber();
   } else {
     G4double targetSizeXY = 1.0*cm;
     G4cout<<" == > Target thickness = "<<targetSizeZ/mm<<"mm"<<G4endl;
@@ -129,11 +129,11 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
                       false,  // no boolean operation
                       0,  // copy number
                       checkOverlaps);  // overlaps checking
-
+    fScoringVolume = logicTarget;
   }
-  // Set Shape2 as scoring volume
+  // 
   //
-  fScoringVolume = logicTarget;
+  
 
    // print the table of materials
   G4cout << *(G4Material::GetMaterialTable()) << G4endl;
@@ -145,46 +145,58 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-void DetectorConstruction::ConstructTargetChameber()
+void DetectorConstruction::ConstructTargetChamber()
 {
   G4double fTargetChamber_h = 3.14 *mm;
   G4double fTargetChamber_r = 8.5 *mm;
-  G4double Nb_thickness = 3*mm;
+  G4double Nb_thickness = 5*mm;
   G4double Nb_h = fTargetChamber_h + Nb_thickness;
   G4double Nb_r = fTargetChamber_r + Nb_thickness;
-  G4double TasizeXY = 2*Nb_r*1.1;
-  G4double TasizeZ = 75. *um;
-   G4double HavarsizeXY = 2*Nb_r*1.1;
-  G4double HavarsizeZ = 30. *um;
+  G4double TiRadius = Nb_r;
+  G4double TisizeZ = 75. *um;
   G4NistManager* nist = G4NistManager::Instance();
-  auto Ta = nist->FindOrBuildMaterial("G4_Ta");
+  auto Ti = nist->FindOrBuildMaterial("G4_Ti");
   
-  auto Tasolid =
-      new G4Tubs("Ta",0,1.1*Nb_r,TasizeZ/2.,0,360*deg);  
+  // --- 1. Titanium Window (Vacuum side) ---
+  auto Tisolid =
+      new G4Tubs("Ta",0,TiRadius,TisizeZ/2.,0,360*deg);  
 
-  auto logicTa = new G4LogicalVolume(Tasolid,  // its solid
-                                          Ta,  // its material
-                                          "Talayer");  // its name
-  G4ThreeVector Tapos(0,0,0*cm);
+  auto logicTi = new G4LogicalVolume(Tisolid,  // its solid
+                                          Ti,  // its material
+                                          "Tilayer");  // its name
+  G4ThreeVector Tipos(0,0,0*cm);
   new G4PVPlacement(nullptr,  // no rotation
-                    Tapos,  // at position
-                    logicTa,  // its logical volume
-                    "Talayer",  // its name
+                    Tipos,  // at position
+                    logicTi,  // its logical volume
+                    "Tilayer",  // its name
                     fLogicWorld,  // its mother  volume
                     false,  // no boolean operation
                     0,  // copy number
                     true);  // overlaps checking
   
-  G4Material* Havar = nist->FindOrBuildMaterial("G4_WATER");
-
- 
+  // --- 2. Helium Gap (Cooling layer) ---
+  auto He = DefineHeliumGas();
+  auto heLayerRadius = Nb_r;
+  G4double heGapThickness = 2.0 * mm;
+  G4Tubs* solidHe = new G4Tubs("SolidHe", 0, heLayerRadius, 0.5*heGapThickness, 0, 360*deg);
+  G4LogicalVolume* logicHe = new G4LogicalVolume(solidHe, He, "Helayer"); 
+  
+  // Position of Helium Gap: Shifted by (Ti_thick/2 + He_thick/2)
+  G4double zHe = Tipos.getZ() + 0.5*TisizeZ + 0.5*heGapThickness;
+  new G4PVPlacement(0, G4ThreeVector(0, 0, zHe), 
+                  logicHe, "Helayer", fLogicWorld, false, 0, true);
+  
+  //Havar is right against the solution
+  G4Material* Havar = DefineHavarMaterial();
+  G4double HavarsizeZ = 38. *um; // 38 um tương ứng 0.0015" từ nhà sản xuất Hamilton Precision Metals
   auto Havarsolid =
       new G4Tubs("Havar",0,Nb_r,HavarsizeZ/2.,0,360*deg);  
 
   auto logicHavar = new G4LogicalVolume(Havarsolid,  // its solid
                                           Havar,  // its material
                                           "Havarlayer");  // its name
-  G4ThreeVector Havarpos(0,0,Tapos.getZ()+0.1*cm);
+  G4double zHavar = zHe + 0.5*heGapThickness + 0.5*HavarsizeZ;
+  G4ThreeVector Havarpos(0,0,zHavar);
   new G4PVPlacement(nullptr,  // no rotation
                     Havarpos,  // at position
                     logicHavar,  // its logical volume
@@ -195,7 +207,7 @@ void DetectorConstruction::ConstructTargetChameber()
                     true);  // overlaps checking
 
 
-  // Phan Nobium
+  // Phan Solution and  Nobium
   auto Nb = nist->FindOrBuildMaterial("G4_Nb");
  
   G4double Nb_posZ = Havarpos.getZ()+HavarsizeZ*0.5+Nb_h*0.5;
@@ -214,7 +226,7 @@ void DetectorConstruction::ConstructTargetChameber()
                     0,  // copy number
                     true);  // overlaps checking
   
-  // Phan chua chat long gay pha ung
+  // Phan chua chat long gay phan ung
   // Calculate the Z position to align the front surfaces
   // Both solids have their "front" at -0.5*h
   G4double zOffset = -0.5 * Nb_h + 0.5 * fTargetChamber_h;  
@@ -232,6 +244,7 @@ void DetectorConstruction::ConstructTargetChameber()
                     false,  // no boolean operation
                     0,  // copy number
                     true);  // overlaps checking
+  fScoringVolume = logicTargetSolution;
 
 }
 
@@ -263,10 +276,23 @@ G4Material* DetectorConstruction::DefineLiquidTargetMaterial() {
     G4String name, symbol;
     G4int nComponents, nAtoms;
 
-    // Define Enriched Nickel-64
-    G4Isotope* iso_Ni64 = new G4Isotope(name="Ni64", z=28, a=64, density=63.9280*g/mole);
-    G4Element* elEnrichedNi = new G4Element(name="EnrichedNi", symbol="Ni", nComponents=1);
-    elEnrichedNi->AddIsotope(iso_Ni64, 100.*perCent);
+    
+    // Target isotope: Ni-64
+    G4Isotope* iso_Ni64 = new G4Isotope("Ni64", 28, 64, 63.9280*g/mole);
+    
+    // Common impurities in enriched Ni-64 (approximated based on commercial standards)
+    G4Isotope* iso_Ni62 = new G4Isotope("Ni62", 28, 62, 61.9283*g/mole);
+    G4Isotope* iso_Ni61 = new G4Isotope("Ni61", 28, 61, 60.9311*g/mole);
+    G4Isotope* iso_Ni60 = new G4Isotope("Ni60", 28, 60, 59.9308*g/mole);
+    G4Isotope* iso_Ni58 = new G4Isotope("Ni58", 28, 58, 57.9353*g/mole);
+
+    // Create the Enriched Nickel element (99% Enrichment)
+    G4Element* elEnrichedNi = new G4Element("EnrichedNi", "Ni", 5);
+    elEnrichedNi->AddIsotope(iso_Ni64, 99.00*perCent); // Target Enrichment
+    elEnrichedNi->AddIsotope(iso_Ni62,  0.40*perCent);
+    elEnrichedNi->AddIsotope(iso_Ni61,  0.10*perCent);
+    elEnrichedNi->AddIsotope(iso_Ni60,  0.35*perCent);
+    elEnrichedNi->AddIsotope(iso_Ni58,  0.15*perCent);
 
     // Get other elements from NIST
     G4Element* elH = nist->FindOrBuildElement("H");
@@ -302,5 +328,64 @@ G4Material* DetectorConstruction::DefineLiquidTargetMaterial() {
     return targetSolution;
 }
 
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+G4Material* DetectorConstruction::DefineHavarMaterial() {
+  G4NistManager* nist = G4NistManager::Instance();
+
+  // 1. Fetch required elements from the NIST database
+  G4Element* elCo = nist->FindOrBuildElement("Co");
+  G4Element* elCr = nist->FindOrBuildElement("Cr");
+  G4Element* elNi = nist->FindOrBuildElement("Ni");
+  G4Element* elW  = nist->FindOrBuildElement("W");
+  G4Element* elMo = nist->FindOrBuildElement("Mo");
+  G4Element* elMn = nist->FindOrBuildElement("Mn");
+  G4Element* elFe = nist->FindOrBuildElement("Fe");
+  G4Element* elC  = nist->FindOrBuildElement("C");
+  G4Element* elBe = nist->FindOrBuildElement("Be");
+
+  // 2. Create the Havar Material
+  // Standard density for Havar is 8.3 g/cm3
+  G4double havarDensity = 8.3 * g/cm3;
+  G4Material* havar = new G4Material("Havar", havarDensity, 9);
+
+  // 3. Add elements according to the specified mass fractions
+  havar->AddElement(elCo, 42.00 * perCent);
+  havar->AddElement(elCr, 19.50 * perCent);
+  havar->AddElement(elNi, 12.70 * perCent);
+  havar->AddElement(elFe, 19.05 * perCent); // Calculated balance
+  havar->AddElement(elW,   2.70 * perCent);
+  havar->AddElement(elMo,  2.20 * perCent);
+  havar->AddElement(elMn,  1.60 * perCent);
+  havar->AddElement(elC,   0.20 * perCent);
+  havar->AddElement(elBe,  0.05 * perCent);
+  return havar;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+G4Material* DetectorConstruction::DefineHeliumGas() {
+  G4NistManager* nist = G4NistManager::Instance();
+  
+  // Define parameters for 2.0 bar Helium
+  G4double pressure = 2.0 * bar;
+  G4double temperature = 293.15 * kelvin; // 20 degrees Celsius
+  G4double density = 0.328 * kg/m3;       // Calculated density at 2.0 bar
+
+  // Create Material: "Helium_2bar"
+  // We use G4_He as a base but redefine its physical state
+  G4Material* he2bar = new G4Material("Helium_2bar", 
+                                      density, 
+                                      1,         // Number of components
+                                      kStateGas, 
+                                      temperature, 
+                                      pressure);
+  
+  // Add Helium element from NIST
+  G4Element* elHe = nist->FindOrBuildElement("He");
+  he2bar->AddElement(elHe, 1.0);
+  return he2bar;
+}
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
