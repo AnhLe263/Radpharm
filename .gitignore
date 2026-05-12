@@ -2,3 +2,4 @@
 appengine-generated/
 build/
 .vscode/
+.vscode/settings.json
