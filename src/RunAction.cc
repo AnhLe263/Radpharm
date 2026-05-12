@@ -83,6 +83,12 @@ void RunAction::BeginOfRunAction(const G4Run*)
   analysisManager->OpenFile("Out.root");
   analysisManager->CreateNtuple("Products", "Secondary particles");
   analysisManager->CreateNtupleSColumn("name");
+  analysisManager->CreateNtupleIColumn("volumeID");
+  analysisManager->CreateNtupleSColumn("track");
+  analysisManager->CreateNtupleSColumn("target");
+  analysisManager->CreateNtupleDColumn("posX");
+  analysisManager->CreateNtupleDColumn("posY");
+  analysisManager->CreateNtupleDColumn("posZ");
   analysisManager->FinishNtuple();
 }
 

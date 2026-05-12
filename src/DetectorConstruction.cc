@@ -40,6 +40,7 @@
 #include "G4Trd.hh"
 #include "G4Element.hh"
 #include "G4GenericMessenger.hh"
+#include "G4UnitsTable.hh"
 
 
 DetectorConstruction::DetectorConstruction():G4VUserDetectorConstruction()
@@ -174,6 +175,7 @@ void DetectorConstruction::ConstructTargetChamber()
                     0,  // copy number
                     true);  // overlaps checking
   
+  G4cout<<"====> On Z-axis, Zmin of Ti: "<<G4BestUnit(Tipos.getZ() - TisizeZ/2.,"Length")<<G4endl;
   // --- 2. Helium Gap (Cooling layer) ---
   auto He = DefineHeliumGas();
   auto heLayerRadius = Nb_r;
@@ -183,6 +185,7 @@ void DetectorConstruction::ConstructTargetChamber()
   
   // Position of Helium Gap: Shifted by (Ti_thick/2 + He_thick/2)
   G4double zHe = Tipos.getZ() + 0.5*TisizeZ + 0.5*heGapThickness;
+  G4cout<<"====> On Z-axis, Zmin of He: "<<G4BestUnit(zHe - 0.5*heGapThickness,"Length")<<G4endl;
   new G4PVPlacement(0, G4ThreeVector(0, 0, zHe), 
                   logicHe, "Helayer", fLogicWorld, false, 0, true);
   
@@ -196,6 +199,7 @@ void DetectorConstruction::ConstructTargetChamber()
                                           Havar,  // its material
                                           "Havarlayer");  // its name
   G4double zHavar = zHe + 0.5*heGapThickness + 0.5*HavarsizeZ;
+  G4cout<<"====> On Z-axis, Zmin of Havar: "<<G4BestUnit(zHavar - 0.5*HavarsizeZ,"Length")<<G4endl;
   G4ThreeVector Havarpos(0,0,zHavar);
   new G4PVPlacement(nullptr,  // no rotation
                     Havarpos,  // at position
@@ -211,6 +215,7 @@ void DetectorConstruction::ConstructTargetChamber()
   auto Nb = nist->FindOrBuildMaterial("G4_Nb");
  
   G4double Nb_posZ = Havarpos.getZ()+HavarsizeZ*0.5+Nb_h*0.5;
+  G4cout<<"====> On Z-axis, Zmin of Nb: "<<G4BestUnit(Nb_posZ - Nb_h*0.5,"Length")<<G4endl;
   G4ThreeVector Nb_pos(0,0,Nb_posZ);
   auto Nb_solid = BuildSolidUnionTwo(Nb_h,Nb_r);
   auto logicNb = new G4LogicalVolume(Nb_solid,  // its solid
@@ -239,7 +244,7 @@ void DetectorConstruction::ConstructTargetChamber()
   new G4PVPlacement(nullptr,  // no rotation
                     posTarget,  // at position
                     logicTargetSolution,  // its logical volume
-                    "TargetSolution",  // its name
+                    "Target",  // its name
                     logicNb,  // its mother  volume
                     false,  // no boolean operation
                     0,  // copy number

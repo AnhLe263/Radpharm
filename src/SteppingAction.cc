@@ -36,6 +36,7 @@
 #include "G4RunManager.hh"
 #include "G4Step.hh"
 #include "G4AnalysisManager.hh"
+#include "G4HadronicProcess.hh"
 
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -46,36 +47,89 @@ SteppingAction::SteppingAction(EventAction* eventAction) : fEventAction(eventAct
 
 void SteppingAction::UserSteppingAction(const G4Step* step)
 {
-  if (!fScoringVolume) {
-    const auto detConstruction = static_cast<const DetectorConstruction*>(
-      G4RunManager::GetRunManager()->GetUserDetectorConstruction());
-    fScoringVolume = detConstruction->GetScoringVolume();
-  }
+   // collect energy deposited in this step
+  G4double edepStep = step->GetTotalEnergyDeposit();
+  if (edepStep <= 0) return;
+
+  fEventAction->AddEdep(edepStep);
+  G4Track* mothertrack = step->GetTrack();
 
   // get volume of the current step
-  G4LogicalVolume* volume =
-    step->GetPreStepPoint()->GetTouchableHandle()->GetVolume()->GetLogicalVolume();
+  auto volume =
+    step->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
 
-  // check if we are in scoring volume
-  if (volume != fScoringVolume) return;
-
-  // collect energy deposited in this step
-  G4double edepStep = step->GetTotalEnergyDeposit();
-  fEventAction->AddEdep(edepStep);
-
-  const auto* secondaries = step->GetSecondaryInCurrentStep();
-  if (secondaries->size()>0) {
-    auto analysisManager = G4AnalysisManager::Instance();
-
-    for (const auto* track : *secondaries)
-    {
-        G4String name = track->GetDefinition()->GetParticleName();
-        analysisManager->FillNtupleSColumn(0, name);
-        analysisManager->AddNtupleRow();
+  auto volID = GetVoulumeID(volume);
+ 
+  const G4VProcess* process = step->GetPostStepPoint()->GetProcessDefinedStep();
+  if (process) {
+    G4ProcessType type = process->GetProcessType();
+    if (type == fHadronic) {
+      G4String procName = process->GetProcessName();
+      //G4StrUtil::to_lower(procName);
+      if (G4StrUtil::contains(procName, "Inelastic")) {
+        const auto* secondaries = step->GetSecondaryInCurrentStep();
+        G4int Z = 999, A = 999;
+        if (secondaries->size()>0) {
+          auto hadProcess = const_cast<G4HadronicProcess*>(
+                static_cast<const G4HadronicProcess*>(process));
+          const G4Nucleus* nucleus = hadProcess->GetTargetNucleus();
+          if (nucleus) {
+            Z = nucleus->GetZ_asInt();
+            A = nucleus->GetA_asInt();
+          }
+          G4String tarInfo = std::to_string(Z) + "-" +std::to_string(A);
+          auto analysisManager = G4AnalysisManager::Instance();
+          G4bool transmutationOccurred = true;
+          G4bool DoesItProduceSameTrack = false;
+          G4bool DoesItProduceSameAsTarget = false;
+          for (const auto* track : *secondaries)
+          {   
+            auto secZ = track->GetDefinition()->GetAtomicNumber();
+            auto secA = track->GetDefinition()->GetAtomicMass();
+            if (track->GetDefinition() == mothertrack->GetParticleDefinition()) DoesItProduceSameTrack = true;
+            else if (secZ == Z && secA == A) DoesItProduceSameAsTarget = true;
+            
+          }
+          if ( DoesItProduceSameAsTarget && DoesItProduceSameTrack) transmutationOccurred = false;
+          if (transmutationOccurred) {
+            G4ThreeVector interactionPos = step->GetPostStepPoint()->GetPosition();
+            G4double x = interactionPos.x();
+            G4double y = interactionPos.y();
+            G4double z = interactionPos.z();
+            for (const auto* track : *secondaries)
+          {   
+            G4String name = track->GetDefinition()->GetParticleName();
+            analysisManager->FillNtupleSColumn(0, name);
+            analysisManager->FillNtupleIColumn(1,volID);
+            analysisManager->FillNtupleSColumn(2, mothertrack->GetParticleDefinition()->GetParticleName());
+            analysisManager->FillNtupleSColumn(3, tarInfo);
+            analysisManager->FillNtupleDColumn(4,x);
+            analysisManager->FillNtupleDColumn(5,y);
+            analysisManager->FillNtupleDColumn(6,z);
+            analysisManager->AddNtupleRow();
+          }
+          }
+          
+        }
+      }
     }
   }
+  
 
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+
+G4int SteppingAction::GetVoulumeID(G4VPhysicalVolume *vol)
+{
+  G4int ID = -1;
+  auto volName = vol->GetName();
+  if (volName == "World") ID = 0;
+  if (volName == "Tilayer") ID = 1;
+  if (volName == "Helayer") ID = 2;
+  if (volName == "Havarlayer") ID = 3;
+  if (volName == "Nblayer") ID = 4;
+  if (volName == "Target") ID = 5;
+  return ID;
+}

@@ -30,9 +30,11 @@
 #define B1SteppingAction_h 1
 
 #include "G4UserSteppingAction.hh"
+#include "globals.hh"
 
 class G4LogicalVolume;
 class G4Step;
+class G4VPhysicalVolume;
 
 
 
@@ -50,6 +52,7 @@ class SteppingAction : public G4UserSteppingAction
     void UserSteppingAction(const G4Step*) override;
 
   private:
+    G4int GetVoulumeID(G4VPhysicalVolume*);
     EventAction* fEventAction = nullptr;
     G4LogicalVolume* fScoringVolume = nullptr;
 };
