@@ -85,7 +85,9 @@
         "typeinfo": "c",
         "unordered_map": "c",
         "utility": "c",
-        "vector": "c"
+        "vector": "c",
+        "ana copy.C": "cpp",
+        "ana2.C": "cpp"
     },
     "C_Cpp.default.compilerPath": "/usr/bin/clang++"
 }
