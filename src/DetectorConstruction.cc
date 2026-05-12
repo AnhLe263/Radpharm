@@ -240,7 +240,7 @@ void DetectorConstruction::ConstructTargetChamber()
   auto targetSolution_solid = BuildSolidUnionTwo(fTargetChamber_h,fTargetChamber_r);
   auto logicTargetSolution = new G4LogicalVolume(targetSolution_solid,  // its solid
                                           fTargetSolution,  // its material
-                                          "TargetSolution");  // its name
+                                          "Target");  // its name
   new G4PVPlacement(nullptr,  // no rotation
                     posTarget,  // at position
                     logicTargetSolution,  // its logical volume
