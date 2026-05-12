@@ -37,12 +37,22 @@
 #include "G4Step.hh"
 #include "G4AnalysisManager.hh"
 #include "G4HadronicProcess.hh"
+#include "G4GenericMessenger.hh"
+#include "G4Proton.hh"
 
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
-SteppingAction::SteppingAction(EventAction* eventAction) : fEventAction(eventAction) {}
+SteppingAction::SteppingAction(EventAction* eventAction) : fEventAction(eventAction) 
+{
+  fMessenger = new G4GenericMessenger(this, "/myscoring/", "Custom control commands");
+  fMessenger->DeclareProperty("scoringenergyout", fScoreEnergyOut, "Enable scoring energy");
+}
 
+SteppingAction::~SteppingAction()
+{
+  delete fMessenger;
+}
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 void SteppingAction::UserSteppingAction(const G4Step* step)
@@ -59,6 +69,13 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     step->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
 
   auto volID = GetVoulumeID(volume);
+
+  if (fScoreEnergyOut && mothertrack->GetDefinition() == G4Proton::Definition() && step->GetPostStepPoint()->GetStepStatus() == fGeomBoundary) {
+    auto analysisManager = G4AnalysisManager::Instance();
+    analysisManager->FillNtupleIColumn(1,0,volID);
+    analysisManager->FillNtupleDColumn(1,1,step->GetPostStepPoint()->GetKineticEnergy());
+    analysisManager->AddNtupleRow(1);
+  }
  
   const G4VProcess* process = step->GetPostStepPoint()->GetProcessDefinedStep();
   if (process) {
@@ -99,14 +116,14 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
             for (const auto* track : *secondaries)
           {   
             G4String name = track->GetDefinition()->GetParticleName();
-            analysisManager->FillNtupleSColumn(0, name);
-            analysisManager->FillNtupleIColumn(1,volID);
-            analysisManager->FillNtupleSColumn(2, mothertrack->GetParticleDefinition()->GetParticleName());
-            analysisManager->FillNtupleSColumn(3, tarInfo);
-            analysisManager->FillNtupleDColumn(4,x);
-            analysisManager->FillNtupleDColumn(5,y);
-            analysisManager->FillNtupleDColumn(6,z);
-            analysisManager->AddNtupleRow();
+            analysisManager->FillNtupleSColumn(0,0, name);
+            analysisManager->FillNtupleIColumn(0,1,volID);
+            analysisManager->FillNtupleSColumn(0,2, mothertrack->GetParticleDefinition()->GetParticleName());
+            analysisManager->FillNtupleSColumn(0,3, tarInfo);
+            analysisManager->FillNtupleDColumn(0,4,x);
+            analysisManager->FillNtupleDColumn(0,5,y);
+            analysisManager->FillNtupleDColumn(0,6,z);
+            analysisManager->AddNtupleRow(0);
           }
           }
           

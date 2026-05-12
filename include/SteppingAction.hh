@@ -37,7 +37,7 @@ class G4Step;
 class G4VPhysicalVolume;
 
 
-
+class G4GenericMessenger;
 class EventAction;
 
 /// Stepping action class
@@ -46,7 +46,7 @@ class SteppingAction : public G4UserSteppingAction
 {
   public:
     SteppingAction(EventAction* eventAction);
-    ~SteppingAction() override = default;
+    ~SteppingAction() override;
 
     // method from the base class
     void UserSteppingAction(const G4Step*) override;
@@ -55,6 +55,8 @@ class SteppingAction : public G4UserSteppingAction
     G4int GetVoulumeID(G4VPhysicalVolume*);
     EventAction* fEventAction = nullptr;
     G4LogicalVolume* fScoringVolume = nullptr;
+    G4GenericMessenger* fMessenger; // Khai báo Messenger
+    G4bool fScoreEnergyOut = false;          // Biến logic cần thay đổi
 };
 
 

@@ -89,7 +89,12 @@ void RunAction::BeginOfRunAction(const G4Run*)
   analysisManager->CreateNtupleDColumn("posX");
   analysisManager->CreateNtupleDColumn("posY");
   analysisManager->CreateNtupleDColumn("posZ");
-  analysisManager->FinishNtuple();
+  analysisManager->FinishNtuple(0);
+
+  analysisManager->CreateNtuple("Energy", "Secondary particles");
+  analysisManager->CreateNtupleIColumn("volumeID");
+  analysisManager->CreateNtupleDColumn("energy");
+  analysisManager->FinishNtuple(1);
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
