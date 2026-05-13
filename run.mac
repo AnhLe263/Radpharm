@@ -6,10 +6,13 @@
 # Change the default number of workers (in multi-threading mode) 
 #/run/numberOfThreads 4
 #
+/target/usingStepMax false
+/target/stepMax 0.1 um
 # Initialize kernel
 /run/initialize
 
 /myscoring/scoringenergyout false
+/myscoring/scoringEdep false
 #
 #/control/verbose 2
 #/run/verbose 2
@@ -33,4 +36,5 @@
 /gps/ene/type Mono
 /gps/ene/mono 15.0 MeV
 #
+/run/printProgress 10
 /run/beamOn 1000

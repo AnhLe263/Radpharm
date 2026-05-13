@@ -39,7 +39,7 @@
 #include "G4HadronicProcess.hh"
 #include "G4GenericMessenger.hh"
 #include "G4Proton.hh"
-
+#include "G4SystemOfUnits.hh"
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -47,6 +47,7 @@ SteppingAction::SteppingAction(EventAction* eventAction) : fEventAction(eventAct
 {
   fMessenger = new G4GenericMessenger(this, "/myscoring/", "Custom control commands");
   fMessenger->DeclareProperty("scoringenergyout", fScoreEnergyOut, "Enable scoring energy");
+  fMessenger->DeclareProperty("scoringEdep", fScoreEnergyDeposit, "Enable scoring edep");
 }
 
 SteppingAction::~SteppingAction()
@@ -68,13 +69,29 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
   auto volume =
     step->GetPreStepPoint()->GetTouchableHandle()->GetVolume();
 
-  auto volID = GetVoulumeID(volume);
+  const G4int volID = GetVoulumeID(volume);
+  auto analysisManager = G4AnalysisManager::Instance();
+
+  if (fScoreEnergyDeposit && mothertrack->GetDefinition() == G4Proton::Definition()) {
+    G4double kinE = step->GetPreStepPoint()->GetKineticEnergy();
+    G4ThreeVector P1 = step->GetPreStepPoint()->GetPosition();
+    G4ThreeVector P2 = step->GetPreStepPoint()->GetPosition();
+    G4ThreeVector point = P1 + G4UniformRand() * (P2 - P1);
+    G4double z = point.z();
+    G4double x = point.x();
+    G4cout<<"Hể\n";
+    analysisManager->FillNtupleIColumn(2,0, (G4int)volID);
+    analysisManager->FillNtupleDColumn(2,1, edepStep/keV);
+    analysisManager->FillNtupleDColumn(2,2, x);
+    analysisManager->FillNtupleDColumn(2,3, z);
+    analysisManager->AddNtupleRow(2);
+  }
 
   if (fScoreEnergyOut && mothertrack->GetDefinition() == G4Proton::Definition() && step->GetPostStepPoint()->GetStepStatus() == fGeomBoundary) {
-    auto analysisManager = G4AnalysisManager::Instance();
     analysisManager->FillNtupleIColumn(1,0,volID);
     analysisManager->FillNtupleDColumn(1,1,step->GetPostStepPoint()->GetKineticEnergy());
     analysisManager->AddNtupleRow(1);
+    G4cout<<"Hểs\n";
   }
  
   const G4VProcess* process = step->GetPostStepPoint()->GetProcessDefinedStep();
@@ -95,7 +112,7 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
             A = nucleus->GetA_asInt();
           }
           G4String tarInfo = std::to_string(Z) + "-" +std::to_string(A);
-          auto analysisManager = G4AnalysisManager::Instance();
+          
           G4bool transmutationOccurred = true;
           G4bool DoesItProduceSameTrack = false;
           G4bool DoesItProduceSameAsTarget = false;

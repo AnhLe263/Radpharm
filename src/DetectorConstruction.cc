@@ -41,12 +41,15 @@
 #include "G4Element.hh"
 #include "G4GenericMessenger.hh"
 #include "G4UnitsTable.hh"
+#include "G4UserLimits.hh"
 
 
 DetectorConstruction::DetectorConstruction():G4VUserDetectorConstruction()
 {
   fMessenger = new G4GenericMessenger(this,"/target/","");
   fMessenger->DeclarePropertyWithUnit("thickness","mm",targetSizeZ,"");
+  fMessenger->DeclareProperty("usingStepMax",fUsingStepLimit,"");
+  fMessenger->DeclarePropertyWithUnit("stepMax","mm",fStepMax,"");
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -165,6 +168,8 @@ void DetectorConstruction::ConstructTargetChamber()
   auto logicTi = new G4LogicalVolume(Tisolid,  // its solid
                                           Ti,  // its material
                                           "Tilayer");  // its name
+  SetStepLimit(logicTi);
+
   G4ThreeVector Tipos(0,0,0*cm);
   new G4PVPlacement(nullptr,  // no rotation
                     Tipos,  // at position
@@ -182,7 +187,7 @@ void DetectorConstruction::ConstructTargetChamber()
   G4double heGapThickness = 2.0 * mm;
   G4Tubs* solidHe = new G4Tubs("SolidHe", 0, heLayerRadius, 0.5*heGapThickness, 0, 360*deg);
   G4LogicalVolume* logicHe = new G4LogicalVolume(solidHe, He, "Helayer"); 
-  
+  SetStepLimit(logicHe);
   // Position of Helium Gap: Shifted by (Ti_thick/2 + He_thick/2)
   G4double zHe = Tipos.getZ() + 0.5*TisizeZ + 0.5*heGapThickness;
   G4cout<<"====> On Z-axis, Zmin of He: "<<G4BestUnit(zHe - 0.5*heGapThickness,"Length")<<G4endl;
@@ -198,6 +203,7 @@ void DetectorConstruction::ConstructTargetChamber()
   auto logicHavar = new G4LogicalVolume(Havarsolid,  // its solid
                                           Havar,  // its material
                                           "Havarlayer");  // its name
+  SetStepLimit(logicHavar);
   G4double zHavar = zHe + 0.5*heGapThickness + 0.5*HavarsizeZ;
   G4cout<<"====> On Z-axis, Zmin of Havar: "<<G4BestUnit(zHavar - 0.5*HavarsizeZ,"Length")<<G4endl;
   G4ThreeVector Havarpos(0,0,zHavar);
@@ -221,7 +227,7 @@ void DetectorConstruction::ConstructTargetChamber()
   auto logicNb = new G4LogicalVolume(Nb_solid,  // its solid
                                           Nb,  // its material
                                           "Nblayer");  // its name
-
+  SetStepLimit(logicNb);
   new G4PVPlacement(nullptr,  // no rotation
                     Nb_pos,  // at position
                     logicNb,  // its logical volume
@@ -241,6 +247,7 @@ void DetectorConstruction::ConstructTargetChamber()
   auto logicTargetSolution = new G4LogicalVolume(targetSolution_solid,  // its solid
                                           fTargetSolution,  // its material
                                           "Target");  // its name
+  SetStepLimit(logicTargetSolution);
   new G4PVPlacement(nullptr,  // no rotation
                     posTarget,  // at position
                     logicTargetSolution,  // its logical volume
@@ -394,3 +401,11 @@ G4Material* DetectorConstruction::DefineHeliumGas() {
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void DetectorConstruction::SetStepLimit(G4LogicalVolume* lv)
+{
+  if (fUsingStepLimit) {
+    auto afStepLimit = new G4UserLimits(fStepMax);
+    lv->SetUserLimits(afStepLimit);
+  }
+}

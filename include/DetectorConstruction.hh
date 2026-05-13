@@ -36,6 +36,7 @@ class G4VPhysicalVolume;
 class G4LogicalVolume;
 class G4GenericMessenger;
 class G4Material;
+class G4UserLimits;
 
 /// Detector construction class to define materials and geometry.
 
@@ -55,11 +56,16 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4Material* DefineLiquidTargetMaterial();
     G4Material* DefineHavarMaterial();
     G4Material* DefineHeliumGas();
+    void SetStepLimit(G4LogicalVolume*);
     G4bool fUsingTargetChamber{true};
     G4LogicalVolume* fScoringVolume = nullptr;
     G4LogicalVolume* fLogicWorld = nullptr;
     G4double targetSizeZ = 1.0;
+    G4bool fUsingStepLimit = false;
+    G4double fStepMax = 0.1;
     G4GenericMessenger* fMessenger;
+    G4UserLimits* fStepLimit = nullptr;
+    
 };
 
 

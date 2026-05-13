@@ -56,7 +56,8 @@ class SteppingAction : public G4UserSteppingAction
     EventAction* fEventAction = nullptr;
     G4LogicalVolume* fScoringVolume = nullptr;
     G4GenericMessenger* fMessenger; // Khai báo Messenger
-    G4bool fScoreEnergyOut = false;          // Biến logic cần thay đổi
+    G4bool fScoreEnergyOut = false; 
+    G4bool fScoreEnergyDeposit = false;          // Biến logic cần thay đổi
 };
 
 

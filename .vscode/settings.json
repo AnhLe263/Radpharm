@@ -87,7 +87,10 @@
         "utility": "c",
         "vector": "c",
         "ana copy.C": "cpp",
-        "ana2.C": "cpp"
+        "ana2.C": "cpp",
+        "plotEdep.C": "cpp",
+        "columns": "c",
+        "tree": "c"
     },
     "C_Cpp.default.compilerPath": "/usr/bin/clang++"
 }
