@@ -22,16 +22,19 @@ void ana() {
     }
 
     // 3. Khai báo biến đọc dữ liệu (chỉ lấy các nhánh cần thiết)
-    char name[256];;
+    char name[256], target[256], track[256];
     Int_t volumeID;
     Double_t posZ;
     tree->SetBranchAddress("name", name);
     tree->SetBranchAddress("volumeID", &volumeID);
+    tree->SetBranchAddress("track", &track);
+    tree->SetBranchAddress("target", &target);
     tree->SetBranchAddress("posZ", &posZ);
 
     // 4. Khai báo MAP để thống kê
     // Cấu trúc: map[volumeID][particle_name] = count
     std::map<int, std::map<std::string, int>> volumeStats;
+     std::map<int, std::map<std::string, int>> ReactionStats;
 
     // 5. Duyệt Tree và đổ dữ liệu vào map
     Long64_t nEntries = tree->GetEntries();
@@ -55,6 +58,10 @@ void ana() {
             auto ztemp = posZ - Z_vol5_offset;
             hz0->Fill(ztemp);
         }
+        std::string st1(track);
+        std::string st2(target);
+        std::string react = st1+"("+st2+")"+sname;
+        ReactionStats[volumeID][react]++;
 
     }
 
@@ -70,6 +77,14 @@ void ana() {
         std::cout << "--------------------------------" << std::endl;
     }
 
+    std::cout << "VolumeID | Reaction | Count" << std::endl;
+    std::cout << "--------------------------------" << std::endl;
+    for (auto const& [volID, reacMap] : ReactionStats) {
+        for (auto const& [rName, count] : reacMap) {
+            std::printf("ID: %-5d | Reaction: %-10s | Count: %d\n", volID, rName.c_str(), count);
+        }
+        std::cout << "--------------------------------" << std::endl;
+    }
     hz0->Draw();
     // 7. Đóng file
     //file->Close();
