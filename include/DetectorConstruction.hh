@@ -65,6 +65,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4double fStepMax = 0.1;
     G4GenericMessenger* fMessenger;
     G4UserLimits* fStepLimit = nullptr;
+    G4String fConcentration = "0.05M";
     
 };
 

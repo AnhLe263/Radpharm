@@ -281,63 +281,94 @@ G4UnionSolid* DetectorConstruction::BuildSolidUnionTwo(G4double h, G4double r)
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 G4Material* DetectorConstruction::DefineLiquidTargetMaterial() {
-    G4NistManager* nist = G4NistManager::Instance();
+  // 1. Define base elements and enriched isotopes
+  G4NistManager* nist = G4NistManager::Instance();
+  G4Element* elH = nist->FindOrBuildElement("H");
+  G4Element* elN = nist->FindOrBuildElement("N");
+  G4Element* elO = nist->FindOrBuildElement("O");
 
-    // 1. Define Elements and Isotopes
-    G4double z, a, density;
-    G4String name, symbol;
-    G4int nComponents, nAtoms;
+  // Define enriched 64Ni isotope (Molar mass: 63.928 g/mol)
+  G4Isotope* isoNi64 = new G4Isotope("Ni64", 28, 64, 63.928*g/mole);
+  G4Element* elNi64 = new G4Element("enrichedNi64", "64Ni", 1);
+  elNi64->AddIsotope(isoNi64, 100.*perCent);
 
-    
-    // Target isotope: Ni-64
-    G4Isotope* iso_Ni64 = new G4Isotope("Ni64", 28, 64, 63.9280*g/mole);
-    
-    // Common impurities in enriched Ni-64 (approximated based on commercial standards)
-    G4Isotope* iso_Ni62 = new G4Isotope("Ni62", 28, 62, 61.9283*g/mole);
-    G4Isotope* iso_Ni61 = new G4Isotope("Ni61", 28, 61, 60.9311*g/mole);
-    G4Isotope* iso_Ni60 = new G4Isotope("Ni60", 28, 60, 59.9308*g/mole);
-    G4Isotope* iso_Ni58 = new G4Isotope("Ni58", 28, 58, 57.9353*g/mole);
+  // 2. Variables for material properties
+  G4double density;
+  G4double fracNi, fracN, fracO, fracH;
+  G4String matName;
 
-    // Create the Enriched Nickel element (99% Enrichment)
-    G4Element* elEnrichedNi = new G4Element("EnrichedNi", "Ni", 5);
-    elEnrichedNi->AddIsotope(iso_Ni64, 99.00*perCent); // Target Enrichment
-    elEnrichedNi->AddIsotope(iso_Ni62,  0.40*perCent);
-    elEnrichedNi->AddIsotope(iso_Ni61,  0.10*perCent);
-    elEnrichedNi->AddIsotope(iso_Ni60,  0.35*perCent);
-    elEnrichedNi->AddIsotope(iso_Ni58,  0.15*perCent);
+  // 3. Material selection based on HNO3 molarity (Calculated for 100 mg Ni in 2 mL)
+  if (fConcentration == "0M") {
+      matName = "Ni64Sol_0M";
+      density = 1.1184 * g/cm3;
+      fracNi  = 4.471 * perCent;
+      fracN   = 1.959 * perCent;
+      fracO   = 83.851 * perCent;
+      fracH   = 9.719 * perCent;
+  } 
+  else if (fConcentration == "0.005M") {
+      matName = "Ni64Sol_0.005M";
+      density = 1.1187 * g/cm3;
+      fracNi  = 4.470 * perCent;
+      fracN   = 1.965 * perCent;
+      fracO   = 83.849 * perCent;
+      fracH   = 9.716 * perCent;
+  }
+  else if (fConcentration == "0.01M") {
+      matName = "Ni64Sol_0.01M";
+      density = 1.1190 * g/cm3;
+      fracNi  = 4.469 * perCent;
+      fracN   = 1.972 * perCent;
+      fracO   = 83.846 * perCent;
+      fracH   = 9.713 * perCent;
+  }
+  else if (fConcentration == "0.05M") {
+      // Recommended concentration for the simulation
+      matName = "Ni64Sol_0.05M";
+      density = 1.1213 * g/cm3;
+      fracNi  = 4.459 * perCent;
+      fracN   = 2.022 * perCent;
+      fracO   = 83.827 * perCent;
+      fracH   = 9.692 * perCent;
+  } 
+  else if (fConcentration == "0.1M") {
+      matName = "Ni64Sol_0.1M";
+      density = 1.1241 * g/cm3;
+      fracNi  = 4.448 * perCent;
+      fracN   = 2.084 * perCent;
+      fracO   = 83.803 * perCent;
+      fracH   = 9.665 * perCent;
+  } 
+  else if (fConcentration == "0.5M") {
+      matName = "Ni64Sol_0.5M";
+      density = 1.1472 * g/cm3;
+      fracNi  = 4.358 * perCent;
+      fracN   = 2.574 * perCent;
+      fracO   = 83.618 * perCent;
+      fracH   = 9.450 * perCent;
+  }
+  else if (fConcentration == "1M") {
+      matName = "Ni64Sol_1M";
+      density = 1.1764 * g/cm3;
+      fracNi  = 4.250 * perCent;
+      fracN   = 3.155 * perCent;
+      fracO   = 83.395 * perCent;
+      fracH   = 9.200 * perCent;
+  }
+  else {
+      G4cerr << "Invalid concentration! Defaulting to 0.05M" << G4endl;
+      fConcentration = "0.05M";
+      return DefineLiquidTargetMaterial();
+  }
 
-    // Get other elements from NIST
-    G4Element* elH = nist->FindOrBuildElement("H");
-    G4Element* elN = nist->FindOrBuildElement("N");
-    G4Element* elO = nist->FindOrBuildElement("O");
+  // 4. Create the final G4Material object
+  G4Material* solution = new G4Material(matName, density, 4);
+  solution->AddElement(elNi64, fracNi);
+  solution->AddElement(elN,    fracN);
+  solution->AddElement(elO,    fracO);
+  solution->AddElement(elH,    fracH);
 
-    // 2. Define Components of the solution
-    
-    // Nickel Nitrate: Ni(NO3)2
-    G4Material* NiNO3_2 = new G4Material("NickelNitrate", density=2.05*g/cm3, nComponents=3);
-    NiNO3_2->AddElement(elEnrichedNi, nAtoms=1);
-    NiNO3_2->AddElement(elN, nAtoms=2);
-    NiNO3_2->AddElement(elO, nAtoms=6);
-
-    // Nitric Acid: HNO3 (Assume 1.51 g/cm3 for pure, but we use mass fraction later)
-    G4Material* HNO3 = new G4Material("NitricAcid", density=1.51*g/cm3, nComponents=3);
-    HNO3->AddElement(elH, nAtoms=1);
-    HNO3->AddElement(elN, nAtoms=1);
-    HNO3->AddElement(elO, nAtoms=3);
-
-    // Water: H2O
-    G4Material* H2O = nist->FindOrBuildMaterial("G4_WATER");
-
-    // 3. Create the Final Liquid Target Solution
-    // Target: 100mg Ni-64 in 2ml solution (~2200mg total)
-    // Calculated Mass Fraction for Ni(NO3)2 is 13.35%
-    G4double solutionDensity = 1.15*g/cm3; // Estimated density of the mixture
-    G4Material* targetSolution = new G4Material("TargetSolution", solutionDensity, nComponents=3);
-    
-    targetSolution->AddMaterial(NiNO3_2, 13.35*perCent);   // Ni(NO3)2: 13.35% ; Hieu kiem tra
-    targetSolution->AddMaterial(HNO3,    2.0*perCent);   // Typical low concentration
-    targetSolution->AddMaterial(H2O,     84.65*perCent);  // Remaining is water
-    return targetSolution;
+  return solution;
 }
 
 

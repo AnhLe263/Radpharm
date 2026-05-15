@@ -6,8 +6,8 @@
 # Change the default number of workers (in multi-threading mode) 
 #/run/numberOfThreads 4
 #
-/target/usingStepMax false
-/target/stepMax 0.1 um
+#/target/usingStepMax false
+#/target/stepMax 0.1 um
 # Initialize kernel
 /run/initialize
 
