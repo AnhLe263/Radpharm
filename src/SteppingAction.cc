@@ -79,7 +79,6 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     G4ThreeVector point = P1 + G4UniformRand() * (P2 - P1);
     G4double z = point.z();
     G4double x = point.x();
-    G4cout<<"Hể\n";
     analysisManager->FillNtupleIColumn(2,0, (G4int)volID);
     analysisManager->FillNtupleDColumn(2,1, edepStep/keV);
     analysisManager->FillNtupleDColumn(2,2, x);
@@ -91,7 +90,6 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     analysisManager->FillNtupleIColumn(1,0,volID);
     analysisManager->FillNtupleDColumn(1,1,step->GetPostStepPoint()->GetKineticEnergy());
     analysisManager->AddNtupleRow(1);
-    G4cout<<"Hểs\n";
   }
  
   const G4VProcess* process = step->GetPostStepPoint()->GetProcessDefinedStep();
