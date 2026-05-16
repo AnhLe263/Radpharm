@@ -4,7 +4,7 @@
 #include <iostream>
 #include <string>
 #include <map>
-
+TString GetVolumeName(Int_t ID);
 void ana() {
     // 1. Mở file ROOT
     const char* filename = "Out.root";
@@ -67,25 +67,38 @@ void ana() {
 
     // 6. In kết quả thống kê ra màn hình
     std::cout << "\n--- KẾT QUẢ THỐNG KÊ ---" << std::endl;
+    std::cout << "VolumeID | Reaction | Count" << std::endl;
+    std::cout << "--------------------------------" << std::endl;
+    for (auto const& [volID, reacMap] : ReactionStats) {
+        for (auto const& [rName, count] : reacMap) {
+            std::printf("ID: %-5s | Reaction: %-10s | Count: %d\n", GetVolumeName(volID).Data(), rName.c_str(), count);
+        }
+        std::cout << "--------------------------------" << std::endl;
+    }
+    hz0->Draw();
+
+    
     std::cout << "VolumeID | Particle Name | Count" << std::endl;
     std::cout << "--------------------------------" << std::endl;
 
     for (auto const& [volID, particleMap] : volumeStats) {
         for (auto const& [pName, count] : particleMap) {
-            std::printf("ID: %-5d | Name: %-10s | Count: %d\n", volID, pName.c_str(), count);
+            std::printf("ID: %-5s | Name: %-10s | Count: %d\n", GetVolumeName(volID).Data(), pName.c_str(), count);
         }
         std::cout << "--------------------------------" << std::endl;
     }
 
-    std::cout << "VolumeID | Reaction | Count" << std::endl;
-    std::cout << "--------------------------------" << std::endl;
-    for (auto const& [volID, reacMap] : ReactionStats) {
-        for (auto const& [rName, count] : reacMap) {
-            std::printf("ID: %-5d | Reaction: %-10s | Count: %d\n", volID, rName.c_str(), count);
-        }
-        std::cout << "--------------------------------" << std::endl;
-    }
-    hz0->Draw();
+    
     // 7. Đóng file
     //file->Close();
+}
+
+TString GetVolumeName(Int_t ID) {
+    if (ID == 0) return "World";
+    if (ID == 1) return "Tilayer";
+    if (ID == 2) return "Helayer";
+    if (ID == 3) return "Havarlayer";
+    if (ID == 4) return "Nblayer";
+    if (ID == 5) return "Target";
+    return "Unknown";
 }

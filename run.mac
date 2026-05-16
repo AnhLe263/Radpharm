@@ -6,6 +6,8 @@
 # Change the default number of workers (in multi-threading mode) 
 #/run/numberOfThreads 4
 #
+/target/CSVFileNameForMat Ni64_HNO3_generalized_results_100%.csv
+/target/HNO3Molarity 0 #M
 #/target/usingStepMax false
 #/target/stepMax 0.1 um
 # Initialize kernel
@@ -25,8 +27,8 @@
 /gps/pos/type Beam
 /gps/pos/shape Circle
 /gps/pos/centre 0. 0. -5. mm
-# Sigma = 3.0mm covers ~95% within the 8.5mm target radius
-/gps/pos/sigma_r 3.0 mm
+# Sigma = 2.5mm covers ~99.7% within the 8.5mm target radius
+/gps/pos/sigma_r 2.5 mm
 
 # Angular distribution: Focused along Z-axis
 /gps/ang/type beam1d

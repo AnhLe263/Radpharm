@@ -42,3 +42,18 @@ foreach(_script ${Radpharm_SCRIPTS})
     COPYONLY
     )
 endforeach()
+
+# Collect all .csv and .C files dynamically using GLOB
+file(GLOB CSV_FILES "${PROJECT_SOURCE_DIR}/*.csv")
+file(GLOB C_FILES "${PROJECT_SOURCE_DIR}/*.C")
+# Copy all discovered .csv and .C files to the build directory
+foreach(_file ${CSV_FILES} ${C_FILES})
+  # Get only the filename component (e.g., "data.csv" instead of the full path)
+  get_filename_component(_filename_only ${_file} NAME)
+  
+  configure_file(
+    ${_file}
+    ${PROJECT_BINARY_DIR}/${_filename_only}
+    COPYONLY
+  )
+endforeach()

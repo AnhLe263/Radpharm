@@ -92,7 +92,8 @@
         "columns": "c",
         "tree": "c",
         "unordered_set": "cpp",
-        "style_colormap": "cpp"
+        "style_colormap": "cpp",
+        "filesystem": "cpp"
     },
     "C_Cpp.default.compilerPath": "/usr/bin/clang++"
 }

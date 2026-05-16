@@ -56,6 +56,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4Material* DefineLiquidTargetMaterial();
     G4Material* DefineHavarMaterial();
     G4Material* DefineHeliumGas();
+    G4Material* CreateTargetMaterialFromCSV();
     void SetStepLimit(G4LogicalVolume*);
     G4bool fUsingTargetChamber{true};
     G4LogicalVolume* fScoringVolume = nullptr;
@@ -66,6 +67,8 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4GenericMessenger* fMessenger;
     G4UserLimits* fStepLimit = nullptr;
     G4String fConcentration = "0.05M";
+    G4double fTargetHNO3Molarity = 0;//same as fConcentration but double type
+    G4String fCSVFileName = "";
     
 };
 

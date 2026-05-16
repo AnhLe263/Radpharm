@@ -50,6 +50,8 @@ DetectorConstruction::DetectorConstruction():G4VUserDetectorConstruction()
   fMessenger->DeclarePropertyWithUnit("thickness","mm",targetSizeZ,"");
   fMessenger->DeclareProperty("usingStepMax",fUsingStepLimit,"");
   fMessenger->DeclarePropertyWithUnit("stepMax","mm",fStepMax,"");
+  fMessenger->DeclareProperty("CSVFileNameForMat",fCSVFileName,"");
+  fMessenger->DeclareProperty("HNO3Molarity",fTargetHNO3Molarity,"");
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -242,7 +244,7 @@ void DetectorConstruction::ConstructTargetChamber()
   // Both solids have their "front" at -0.5*h
   G4double zOffset = -0.5 * Nb_h + 0.5 * fTargetChamber_h;  
   G4ThreeVector posTarget(0, 0, zOffset);
-  auto fTargetSolution =  DefineLiquidTargetMaterial();
+  auto fTargetSolution =  CreateTargetMaterialFromCSV();
   auto targetSolution_solid = BuildSolidUnionTwo(fTargetChamber_h,fTargetChamber_r);
   auto logicTargetSolution = new G4LogicalVolume(targetSolution_solid,  // its solid
                                           fTargetSolution,  // its material
@@ -439,4 +441,114 @@ void DetectorConstruction::SetStepLimit(G4LogicalVolume* lv)
     auto afStepLimit = new G4UserLimits(fStepMax);
     lv->SetUserLimits(afStepLimit);
   }
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+
+G4Material* DetectorConstruction::CreateTargetMaterialFromCSV()
+{
+    // Path to your actual CSV data file
+    std::ifstream file(fCSVFileName);
+    
+    if (!file.is_open()) {
+        G4Exception("DetectorConstruction::CreateTargetMaterialFromCSV", "FileNotOpen",
+                    FatalException, ("Cannot open CSV data file: " + fCSVFileName).c_str());
+    }
+    
+    std::string line;
+    std::getline(file, line); // Skip the header row of the CSV file
+    
+    G4bool found = false;
+    G4double minDifference = 9999.0;
+    
+    // Variables to store the retrieved values from the best-matching row
+    G4double resMolarity = 0.0;
+    G4double resDensity = 0.0;
+    G4double wt_N = 0.0, wt_O = 0.0, wt_H = 0.0;
+    G4double wt_Ni64 = 0.0, wt_Ni58 = 0.0, wt_Ni60 = 0.0, wt_Ni61 = 0.0, wt_Ni62 = 0.0;
+    
+    // Read and scan the file to find the closest molarity matching the target
+    while (std::getline(file, line)) {
+        std::stringstream ss(line);
+        std::string cell;
+        std::vector<G4double> rowValues;
+        
+        while (std::getline(ss, cell, ',')) {
+            rowValues.push_back(std::stod(cell));
+        }
+        
+        if (rowValues.size() < 14) continue; // Skip corrupted or incomplete rows
+        
+        G4double molarity = rowValues[0];
+        G4double diff = std::abs(molarity - fTargetHNO3Molarity);
+        
+        // Select the row with the minimum difference (maximum allowed tolerance is 0.05 M)
+        if (diff < minDifference && diff < 0.05) {
+            minDifference = diff;
+            resMolarity = rowValues[0];
+            resDensity  = rowValues[1];
+            wt_N        = rowValues[6];
+            wt_O        = rowValues[7];
+            wt_H        = rowValues[8];
+            wt_Ni64     = rowValues[9];
+            wt_Ni58     = rowValues[10];
+            wt_Ni60     = rowValues[11];
+            wt_Ni61     = rowValues[12];
+            wt_Ni62     = rowValues[13];
+            found = true;
+        }
+    }
+    file.close();
+    
+    if (!found) {
+        G4Exception("DetectorConstruction::CreateTargetMaterialFromCSV", "MolarityNotFound",
+                    FatalException, "The requested HNO3 molarity was not found in the CSV file!");
+    }
+    
+    G4cout << "---> [Geant4] Configuration loaded successfully for molarity: " << resMolarity << " M" << G4endl;
+    G4cout << "---> [Geant4] Solution density: " << resDensity << " g/cm3" << G4endl;
+
+    // Retrieve base elements from the NIST manager for non-metals
+    G4NistManager* nist = G4NistManager::Instance();
+    G4Element* elH = nist->FindOrBuildElement("H");
+    G4Element* elN = nist->FindOrBuildElement("N");
+    G4Element* elO = nist->FindOrBuildElement("O");
+    
+    // Define the single stable isotopes of Nickel with their respective atomic masses
+    G4Isotope* isoNi58 = new G4Isotope("isoNi58", 28, 58, 57.9353*g/mole);
+    G4Isotope* isoNi60 = new G4Isotope("isoNi60", 28, 60, 59.9308*g/mole);
+    G4Isotope* isoNi61 = new G4Isotope("isoNi61", 28, 61, 60.9311*g/mole);
+    G4Isotope* isoNi62 = new G4Isotope("isoNi62", 28, 62, 61.9283*g/mole);
+    G4Isotope* isoNi64 = new G4Isotope("isoNi64", 28, 64, 63.9280*g/mole);
+    
+    // Construct a custom element for Nickel from the individual isotopes
+    G4Element* elCustomNi = new G4Element("CustomNi", "Ni", 5);
+    
+    // Calculate the relative abundance fractions among the Ni isotopes,
+    // as the CSV values represent the weight percentage relative to the entire solution.
+    G4double totalNiWeight = wt_Ni64 + wt_Ni58 + wt_Ni60 + wt_Ni61 + wt_Ni62;
+    
+    if (totalNiWeight > 0.0) {
+        elCustomNi->AddIsotope(isoNi58, wt_Ni58 / totalNiWeight);
+        elCustomNi->AddIsotope(isoNi60, wt_Ni60 / totalNiWeight);
+        elCustomNi->AddIsotope(isoNi61, wt_Ni61 / totalNiWeight);
+        elCustomNi->AddIsotope(isoNi62, wt_Ni62 / totalNiWeight);
+        elCustomNi->AddIsotope(isoNi64, wt_Ni64 / totalNiWeight);
+    } else {
+        // Fallback default if the target solution contains zero nickel concentration
+        elCustomNi->AddIsotope(isoNi58, 100.0*perCent); 
+    }
+
+    // Build the final dynamic target material composite (composed of H, N, O, and custom Ni)
+    std::string matName = "Target_Sol_" + std::to_string(resMolarity) + "M";
+    G4Material* targetMaterial = new G4Material(matName, resDensity * g/cm3, 4);
+    
+    // Divide by 100.0 since data values in the CSV file are given in weight percentages (0-100%)
+    targetMaterial->AddElement(elH,        wt_H / 100.0);
+    targetMaterial->AddElement(elN,        wt_N / 100.0);
+    targetMaterial->AddElement(elO,        wt_O / 100.0);
+    targetMaterial->AddElement(elCustomNi, totalNiWeight / 100.0);
+    
+    return targetMaterial;
 }
