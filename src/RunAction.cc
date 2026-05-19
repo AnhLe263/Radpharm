@@ -41,6 +41,16 @@
 #include "G4UnitsTable.hh"
 #include "G4AnalysisManager.hh"
 
+#include "G4Threading.hh"
+#include "G4AutoLock.hh"
+
+#include <fstream>
+#include <vector>
+#include <algorithm>
+
+G4ThreadLocal ReactionTable* RunAction::fReactionTable = nullptr;
+
+
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -103,6 +113,11 @@ void RunAction::BeginOfRunAction(const G4Run*)
   analysisManager->CreateNtupleDColumn("posZ");
   analysisManager->FinishNtuple(2);
 
+  if (!fReactionTable)
+    fReactionTable = new ReactionTable;
+
+  fReactionTable->clear();
+
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
@@ -113,6 +128,45 @@ void RunAction::EndOfRunAction(const G4Run* run)
   analysisManager->Write();
   analysisManager->CloseFile();
 
+  if (fReactionTable) {
+
+    G4String filename;
+
+    if (IsMaster())
+      filename = "reaction_master.txt";
+    else
+      filename = "reaction_thread_" +
+                 std::to_string(G4Threading::G4GetThreadId()) +
+                 ".txt";
+
+    std::ofstream out(filename);
+
+    std::vector<std::pair<ReactionKey, ReactionData>> vec;
+
+    for (const auto& kv : *fReactionTable)
+      vec.push_back(kv);
+
+    std::sort(vec.begin(), vec.end(),
+      [](const auto& a, const auto& b)
+      {
+        return a.second.count > b.second.count;
+      });
+
+    out << "# Reaction tally\n";
+    out << "# Count    Reaction\n\n";
+
+    for (const auto& kv : vec) {
+
+      out << std::setw(12)
+          << kv.second.count
+          << "    "
+          << ReactionToString(kv.first)
+          << "\n";
+    }
+
+    out.close();
+  }
+  
   /*
   G4int nofEvents = run->GetNumberOfEvent();
   if (nofEvents == 0) return;
@@ -186,3 +240,10 @@ void RunAction::AddEdep(G4double edep)
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
+void RunAction::AddReaction(const ReactionKey& key)
+{
+  if (!fReactionTable)
+    fReactionTable = new ReactionTable;
+
+  (*fReactionTable)[key].count++;
+}

@@ -33,6 +33,7 @@
 
 #include "G4Accumulable.hh"
 #include "globals.hh"
+#include "ReactionData.hh"
 
 class G4Run;
 
@@ -53,10 +54,11 @@ class RunAction : public G4UserRunAction
     void EndOfRunAction(const G4Run*) override;
 
     void AddEdep(G4double edep);
-
+    static void AddReaction(const ReactionKey& key);
   private:
     G4Accumulable<G4double> fEdep = 0.;
     G4Accumulable<G4double> fEdep2 = 0.;
+    static G4ThreadLocal ReactionTable* fReactionTable;
 };
 
 

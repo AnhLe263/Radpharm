@@ -31,6 +31,7 @@
 
 #include "G4UserSteppingAction.hh"
 #include "globals.hh"
+#include "ReactionData.hh"
 
 class G4LogicalVolume;
 class G4Step;

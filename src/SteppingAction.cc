@@ -41,6 +41,12 @@
 #include "G4Proton.hh"
 #include "G4SystemOfUnits.hh"
 
+#include "RunAction.hh"
+
+#include "G4Neutron.hh"
+#include "G4Gamma.hh"
+#include "G4IonTable.hh"
+
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 SteppingAction::SteppingAction(EventAction* eventAction) : fEventAction(eventAction) 
@@ -147,6 +153,74 @@ void SteppingAction::UserSteppingAction(const G4Step* step)
     }
   }
   
+
+ 
+  if (volID == 5 && process) {
+    const G4VProcess* process =
+    step->GetPostStepPoint()->GetProcessDefinedStep();
+
+    if (process->GetProcessType() != fHadronic)
+      return;
+
+    G4String procName = process->GetProcessName();
+
+    if (!G4StrUtil::contains(procName, "Inelastic"))
+      return;
+
+    auto hadProcess =
+      const_cast<G4HadronicProcess*>(
+        static_cast<const G4HadronicProcess*>(process));
+
+    const G4Nucleus* nucleus = hadProcess->GetTargetNucleus();
+
+    if (!nucleus)
+      return;
+
+    int targetZ = nucleus->GetZ_asInt();
+    int targetA = nucleus->GetA_asInt();
+
+    auto ion =
+      G4IonTable::GetIonTable()->GetIon(targetZ, targetA, 0.0);
+
+    if (!ion)
+      return;
+
+    int targetPDG = ion->GetPDGEncoding();
+
+    int projectilePDG =
+      mothertrack->GetDefinition()->GetPDGEncoding();
+
+    const auto* secondaries =
+      step->GetSecondaryInCurrentStep();
+
+    if (!secondaries)
+      return;
+
+    if (secondaries->empty())
+      return;
+
+    std::vector<int> productPDGs;
+
+    for (const auto* track : *secondaries)
+    {
+      auto def = track->GetDefinition();
+
+      int pdg = def->GetPDGEncoding();
+
+      productPDGs.push_back(pdg);
+    }
+
+    std::sort(productPDGs.begin(),
+              productPDGs.end());
+
+    ReactionKey key;
+
+    key.projectilePDG = projectilePDG;
+    key.targetPDG = targetPDG;
+    key.productPDGs = std::move(productPDGs);
+
+    RunAction::AddReaction(key);
+  }
 
 }
 

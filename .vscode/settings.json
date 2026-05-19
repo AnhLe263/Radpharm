@@ -93,7 +93,9 @@
         "tree": "c",
         "unordered_set": "cpp",
         "style_colormap": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "PlotGenericBateman.C": "cpp",
+        "PlotGenericBateman2.C": "cpp"
     },
     "C_Cpp.default.compilerPath": "/usr/bin/clang++"
 }
