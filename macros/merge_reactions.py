@@ -27,6 +27,7 @@ import glob
 import re
 import sys
 from collections import defaultdict
+from collections import Counter
 
 
 # --------------------------------------------------------
@@ -140,6 +141,23 @@ def normalize_particle_name(name):
 
     return name
 
+# --------------------------------------------------------
+# Helper
+# --------------------------------------------------------
+
+def is_nucleus(name):
+    """
+    Detect nuclei/isotopes.
+
+    Examples:
+        Cu64 -> True
+        O16  -> True
+        proton -> False
+        neutron -> False
+        gamma -> False
+    """
+
+    return re.match(r"^[A-Z][a-z]?\d+$", name) is not None
 
 # --------------------------------------------------------
 # PARSE FILE
@@ -209,6 +227,53 @@ def main():
         reverse=True
     )
 
+    # --------------------------------------------------------
+    # isotope production tally
+    # --------------------------------------------------------
+
+    isotope_tally = Counter()
+    total_secondary_nuclei = 0
+
+    for reaction, count in sorted_items:
+
+        if "->" not in reaction:
+            continue
+
+        _, right = reaction.split("->")
+
+        products = [
+            x.strip()
+            for x in right.split("+")
+            if x.strip()
+        ]
+
+        for p in products:
+
+            if is_nucleus(p):
+
+                isotope_tally[p] += count
+                total_secondary_nuclei += count
+        
+    sorted_iso = sorted(
+        isotope_tally.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )  
+    # --------------------------------------------------------
+    # Cu64 percentage
+    # --------------------------------------------------------
+
+    cu64_count = isotope_tally.get("Cu64", 0)
+
+    if total_secondary_nuclei > 0:
+
+        cu64_percent = (
+            100.0 * cu64_count / total_secondary_nuclei
+        )
+
+    else:
+        cu64_percent = 0.0
+    
     with open(output_file, "w") as out:
 
         out.write("# Merged reaction tally\n")
@@ -217,11 +282,46 @@ def main():
         for reaction, count in sorted_items:
 
             out.write(f"{count:12d}    {reaction}\n")
+        
+        out.write("\n\n")
+        out.write("# Isotope production tally\n\n")
+        for iso, count in sorted_iso:
+
+            out.write(f"{count:12d}    {iso}\n")
+        
+        out.write("\n\n")
+        out.write("# Cu64 production summary\n\n")
+
+        out.write(
+            f"Total secondary nuclei : "
+            f"{total_secondary_nuclei}\n"
+        )
+
+        out.write(
+            f"Cu64 count             : "
+            f"{cu64_count}\n"
+        )
+
+        out.write(
+            f"Cu64 percentage        : "
+            f"{cu64_percent:.6f} %\n"
+        )
+
+        out.write(
+            f"Others        : "
+            f"{(100.-cu64_percent):.6f} %\n"
+        )
 
     print()
+    print()
+    print("=================================================")
+    print(f"Total secondary nuclei : {total_secondary_nuclei}")
+    print(f"Cu64 count             : {cu64_count}")
+    print(f"Cu64 percentage        : {cu64_percent:.4f} %")
+    print(f"Other percentage       : {(100.-cu64_percent):.4f} %")
+    print("=================================================")
     print(f"Merged reactions: {len(sorted_items)}")
     print(f"Output written to: {output_file}")
-
 
 # --------------------------------------------------------
 

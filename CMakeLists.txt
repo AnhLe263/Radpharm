@@ -45,8 +45,8 @@ endforeach()
 
 # Collect all .csv and .C files dynamically using GLOB
 file(GLOB CSV_FILES "${PROJECT_SOURCE_DIR}/*.csv")
-file(GLOB PY_FILES "${PROJECT_SOURCE_DIR}/*.py")
-file(GLOB C_FILES "${PROJECT_SOURCE_DIR}/*.C")
+file(GLOB PY_FILES "${PROJECT_SOURCE_DIR}/macros/*.py")
+file(GLOB C_FILES "${PROJECT_SOURCE_DIR}/macros*.C")
 # Copy all discovered .csv and .C files to the build directory
 foreach(_file ${CSV_FILES} ${C_FILES} ${PY_FILES})
   # Get only the filename component (e.g., "data.csv" instead of the full path)
