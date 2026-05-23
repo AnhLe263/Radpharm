@@ -35,7 +35,7 @@ Radpharm is designed for research applications in nuclear medicine, accelerator 
 ## Build Instructions
 
 ```bash
-git clone -b dev-first https://github.com/AnhLe263/Radpharm.git
+git clone https://github.com/AnhLe263/Radpharm.git
 
 cd Radpharm
 
