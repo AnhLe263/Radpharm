@@ -426,19 +426,19 @@ G4int SteppingAction::GetVoulumeID(
   if (volName == "World")
     ID = 0;
 
-  if (volName == "Tilayer")
+  if (volName == "BeamWindow")
     ID = 1;
 
-  if (volName == "Helayer")
+  if (volName == "HeCavity")
     ID = 2;
 
-  if (volName == "Havarlayer")
+  if (volName == "TargetWindow")
     ID = 3;
 
-  if (volName == "Nblayer")
+  if (volName == "NbOuter")
     ID = 4;
 
-  if (volName == "Target")
+  if (volName == "LiquidTarget")
     ID = 5;
 
   return ID;

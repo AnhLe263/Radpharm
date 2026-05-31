@@ -42,6 +42,7 @@
 #include "G4GenericMessenger.hh"
 #include "G4UnitsTable.hh"
 #include "G4UserLimits.hh"
+#include "G4String.hh"
 
 
 DetectorConstruction::DetectorConstruction():G4VUserDetectorConstruction()
@@ -52,6 +53,8 @@ DetectorConstruction::DetectorConstruction():G4VUserDetectorConstruction()
   fMessenger->DeclarePropertyWithUnit("stepMax","mm",fStepMax,"");
   fMessenger->DeclareProperty("CSVFileNameForMat",fCSVFileName,"");
   fMessenger->DeclareProperty("HNO3Molarity",fTargetHNO3Molarity,"");
+  fMessenger->DeclareProperty("beamEntranceWindowMaterial",fBeamEntranceWindowMatName,"");
+  fMessenger->DeclarePropertyWithUnit("beamEntranceWindowThickness","mm",fBeamEntranceWindowThickness,"");
 }
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
@@ -153,113 +156,352 @@ G4VPhysicalVolume* DetectorConstruction::Construct()
 
 void DetectorConstruction::ConstructTargetChamber()
 {
-  G4double fTargetChamber_h = 3.14 *mm;
-  G4double fTargetChamber_r = 8.5 *mm;
-  G4double Nb_thickness = 5*mm;
-  G4double Nb_h = fTargetChamber_h + Nb_thickness;
-  G4double Nb_r = fTargetChamber_r + Nb_thickness;
-  G4double TiRadius = Nb_r;
-  G4double TisizeZ = 75. *um;
-  G4NistManager* nist = G4NistManager::Instance();
-  auto Ti = nist->FindOrBuildMaterial("G4_Ti");
-  
-  // --- 1. Titanium Window (Vacuum side) ---
-  auto Tisolid =
-      new G4Tubs("Ta",0,TiRadius,TisizeZ/2.,0,360*deg);  
+  G4bool checkOverlaps = true;
 
-  auto logicTi = new G4LogicalVolume(Tisolid,  // its solid
-                                          Ti,  // its material
-                                          "Tilayer");  // its name
-  SetStepLimit(logicTi);
-
-  G4ThreeVector Tipos(0,0,0*cm);
-  new G4PVPlacement(nullptr,  // no rotation
-                    Tipos,  // at position
-                    logicTi,  // its logical volume
-                    "Tilayer",  // its name
-                    fLogicWorld,  // its mother  volume
-                    false,  // no boolean operation
-                    0,  // copy number
-                    true);  // overlaps checking
-  
-  G4cout<<"====> On Z-axis, Zmin of Ti: "<<G4BestUnit(Tipos.getZ() - TisizeZ/2.,"Length")<<G4endl;
-  // --- 2. Helium Gap (Cooling layer) ---
-  auto He = DefineHeliumGas();
-  auto heLayerRadius = Nb_r;
-  G4double heGapThickness = 2.0 * mm;
-  G4Tubs* solidHe = new G4Tubs("SolidHe", 0, heLayerRadius, 0.5*heGapThickness, 0, 360*deg);
-  G4LogicalVolume* logicHe = new G4LogicalVolume(solidHe, He, "Helayer"); 
-  SetStepLimit(logicHe);
-  // Position of Helium Gap: Shifted by (Ti_thick/2 + He_thick/2)
-  G4double zHe = Tipos.getZ() + 0.5*TisizeZ + 0.5*heGapThickness;
-  G4cout<<"====> On Z-axis, Zmin of He: "<<G4BestUnit(zHe - 0.5*heGapThickness,"Length")<<G4endl;
-  new G4PVPlacement(0, G4ThreeVector(0, 0, zHe), 
-                  logicHe, "Helayer", fLogicWorld, false, 0, true);
-  
-  //Havar is right against the solution
-  G4Material* Havar = DefineHavarMaterial();
-  G4double HavarsizeZ = 38. *um; // 38 um tương ứng 0.0015" từ nhà sản xuất Hamilton Precision Metals
-  auto Havarsolid =
-      new G4Tubs("Havar",0,Nb_r,HavarsizeZ/2.,0,360*deg);  
-
-  auto logicHavar = new G4LogicalVolume(Havarsolid,  // its solid
-                                          Havar,  // its material
-                                          "Havarlayer");  // its name
-  SetStepLimit(logicHavar);
-  G4double zHavar = zHe + 0.5*heGapThickness + 0.5*HavarsizeZ;
-  G4cout<<"====> On Z-axis, Zmin of Havar: "<<G4BestUnit(zHavar - 0.5*HavarsizeZ,"Length")<<G4endl;
-  G4ThreeVector Havarpos(0,0,zHavar);
-  new G4PVPlacement(nullptr,  // no rotation
-                    Havarpos,  // at position
-                    logicHavar,  // its logical volume
-                    "Havarlayer",  // its name
-                    fLogicWorld,  // its mother  volume
-                    false,  // no boolean operation
-                    0,  // copy number
-                    true);  // overlaps checking
-
-
-  // Phan Solution and  Nobium
-  auto Nb = nist->FindOrBuildMaterial("G4_Nb");
+  //------------------------------------------
+  // Materials
+  //------------------------------------------
+  auto nist = G4NistManager::Instance();
+  auto liquidMat = CreateTargetMaterialFromCSV();
+  G4Material* beamEntranceWindowMat = nullptr;
+  G4StrUtil::to_lower(fBeamEntranceWindowMatName);
+  if ( fBeamEntranceWindowMatName == "havar") {
+    beamEntranceWindowMat = DefineHavarMaterial();
+  }
+  if ( fBeamEntranceWindowMatName == "ti") {
+    beamEntranceWindowMat = nist->FindOrBuildMaterial("G4_Ti");
+  }
  
-  G4double Nb_posZ = Havarpos.getZ()+HavarsizeZ*0.5+Nb_h*0.5;
-  G4cout<<"====> On Z-axis, Zmin of Nb: "<<G4BestUnit(Nb_posZ - Nb_h*0.5,"Length")<<G4endl;
-  G4ThreeVector Nb_pos(0,0,Nb_posZ);
-  auto Nb_solid = BuildSolidUnionTwo(Nb_h,Nb_r);
-  auto logicNb = new G4LogicalVolume(Nb_solid,  // its solid
-                                          Nb,  // its material
-                                          "Nblayer");  // its name
-  SetStepLimit(logicNb);
-  new G4PVPlacement(nullptr,  // no rotation
-                    Nb_pos,  // at position
-                    logicNb,  // its logical volume
-                    "Nblayer",  // its name
-                    fLogicWorld,  // its mother  volume
-                    false,  // no boolean operation
-                    0,  // copy number
-                    true);  // overlaps checking
-  
-  // Phan chua chat long gay phan ung
-  // Calculate the Z position to align the front surfaces
-  // Both solids have their "front" at -0.5*h
-  G4double zOffset = -0.5 * Nb_h + 0.5 * fTargetChamber_h;  
-  G4ThreeVector posTarget(0, 0, zOffset);
-  auto fTargetSolution =  CreateTargetMaterialFromCSV();
-  auto targetSolution_solid = BuildSolidUnionTwo(fTargetChamber_h,fTargetChamber_r);
-  auto logicTargetSolution = new G4LogicalVolume(targetSolution_solid,  // its solid
-                                          fTargetSolution,  // its material
-                                          "Target");  // its name
-  SetStepLimit(logicTargetSolution);
-  new G4PVPlacement(nullptr,  // no rotation
-                    posTarget,  // at position
-                    logicTargetSolution,  // its logical volume
-                    "Target",  // its name
-                    logicNb,  // its mother  volume
-                    false,  // no boolean operation
-                    0,  // copy number
-                    true);  // overlaps checking
-  fScoringVolume = logicTargetSolution;
+  auto heliumMat = DefineHeliumGas();
 
+  
+
+  auto nbMat =
+  nist->FindOrBuildMaterial("G4_Nb");
+
+  //------------------------------------------
+  // Geometry
+  //------------------------------------------
+
+  auto geom =
+  BuildConicalLiquidTarget();
+
+  //------------------------------------------
+  // Dimensions
+  //------------------------------------------
+
+  const G4double heThickness =
+      2.0*mm;
+
+  const G4double targetWindowThickness =
+      35.0*um;
+
+  //------------------------------------------
+  // Beam Entrance Window
+  //------------------------------------------
+
+  auto beamWindowSolid =
+  new G4Tubs(
+      "BeamWindow",
+      0.0,
+      geom.Rfront+ geom.NbThickness,
+      fBeamEntranceWindowThickness/2.0,
+      0.*deg,
+      360.*deg
+  );
+
+  auto beamWindowLV =
+  new G4LogicalVolume(
+      beamWindowSolid,
+      beamEntranceWindowMat,
+      "BeamWindowLV"
+  );
+
+  new G4PVPlacement(
+      nullptr,
+      G4ThreeVector(
+          0,
+          0,
+          0
+      ),
+      beamWindowLV,
+      "BeamWindow",
+      fLogicWorld,
+      false,
+      0,
+      checkOverlaps
+  );
+
+  //------------------------------------------
+  // He cavity
+  //------------------------------------------
+
+  auto heSolid =
+  new G4Tubs(
+      "HeCavity",
+      0.0,
+      geom.Rfront+ geom.NbThickness,
+      heThickness/2.0,
+      0.*deg,
+      360.*deg
+  );
+
+  auto heLV =
+  new G4LogicalVolume(
+      heSolid,
+      heliumMat,
+      "HeCavityLV"
+  );
+
+  G4double zHe =
+      fBeamEntranceWindowThickness/2.0
+    + heThickness/2.0;
+
+  new G4PVPlacement(
+      nullptr,
+      G4ThreeVector(
+          0,
+          0,
+          zHe
+      ),
+      heLV,
+      "HeCavity",
+      fLogicWorld,
+      false,
+      0,
+      checkOverlaps
+  );
+
+  //------------------------------------------
+  // Target Window (Nb)
+  //------------------------------------------
+
+  auto targetWindowSolid =
+  new G4Tubs(
+      "TargetWindow",
+      0.0,
+      geom.Rfront + geom.NbThickness,
+      targetWindowThickness/2.0,
+      0.*deg,
+      360.*deg
+  );
+
+  auto targetWindowLV =
+  new G4LogicalVolume(
+      targetWindowSolid,
+      nbMat,
+      "TargetWindowLV"
+  );
+
+  G4double zTargetWindow =
+      fBeamEntranceWindowThickness/2.0
+    + heThickness
+    + targetWindowThickness/2.0;
+
+  new G4PVPlacement(
+      nullptr,
+      G4ThreeVector(
+          0,
+          0,
+          zTargetWindow
+      ),
+      targetWindowLV,
+      "TargetWindow",
+      fLogicWorld,
+      false,
+      0,
+      checkOverlaps
+  );
+
+  //------------------------------------------
+  // Nb outer body
+  //------------------------------------------
+
+  auto nbOuterLV =
+  new G4LogicalVolume(
+      geom.nbOuterSolid,
+      nbMat,
+      "NbOuterLV"
+  );
+
+  G4double zNbOuter =
+      fBeamEntranceWindowThickness/2.0
+    + heThickness
+    + targetWindowThickness
+    + geom.coneLength/2.0;
+
+  new G4PVPlacement(
+      nullptr,
+      G4ThreeVector(
+          0,
+          0,
+          zNbOuter
+      ),
+      nbOuterLV,
+      "NbOuter",
+      fLogicWorld,
+      false,
+      0,
+      checkOverlaps
+  );
+
+  //------------------------------------------
+  // Liquid target
+  //------------------------------------------
+
+  auto liquidLV =
+  new G4LogicalVolume(
+      geom.liquidSolid,
+      liquidMat,
+      "LiquidTargetLV"
+  );
+
+  //------------------------------------------
+  // Liquid is daughter of NbOuter
+  //------------------------------------------
+
+  new G4PVPlacement(
+      nullptr,
+      G4ThreeVector(
+          0,
+          0,
+          0
+      ),
+      liquidLV,
+      "LiquidTarget",
+      nbOuterLV,
+      false,
+      0,
+      checkOverlaps
+  );
+
+  //------------------------------------------
+  // Scoring volume
+  //------------------------------------------
+
+  fScoringVolume = liquidLV;
+
+  SetStepLimit(liquidLV);
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+ConicalTargetGeometry
+DetectorConstruction::BuildConicalLiquidTarget()
+{
+    ConicalTargetGeometry geom;
+
+    //------------------------------------------
+    // Optimized geometry
+    //------------------------------------------
+
+    geom.Rfront = 7.80*mm;
+    geom.Rback  = 4.00*mm;
+
+    geom.coneLength   = 16.0*mm;
+    geom.sphereRadius = 4.0*mm;
+
+    geom.totalLength  = 20.0*mm; // Total langth of liquid solid
+
+    geom.NbThickness  = 1.0*mm;
+
+    //------------------------------------------
+    // Liquid cone
+    //------------------------------------------
+
+    auto liquidCone =
+    new G4Cons(
+        "LiquidCone",
+        0.0,
+        geom.Rfront,
+        0.0,
+        geom.Rback,
+        geom.coneLength/2.0,
+        0.*deg,
+        360.*deg
+    );
+
+    //------------------------------------------
+    // Hemisphere (+Z side)
+    //------------------------------------------
+
+    auto liquidSphere =
+    new G4Sphere(
+        "LiquidSphere",
+        0.0,
+        geom.sphereRadius,
+        0.*deg,
+        360.*deg,
+        0.*deg,
+        90.*deg
+    );
+
+    //------------------------------------------
+    // Liquid target
+    //------------------------------------------
+
+    geom.liquidSolid =
+    new G4UnionSolid(
+        "LiquidTarget",
+        liquidCone,
+        liquidSphere,
+        nullptr,
+        G4ThreeVector(
+            0.0,
+            0.0,
+            geom.coneLength/2.0
+        )
+    );
+
+    //------------------------------------------
+    // Nb outer cone
+    //------------------------------------------
+
+    auto nbCone =
+    new G4Cons(
+        "NbCone",
+        0.0,
+        geom.Rfront + geom.NbThickness,
+        0.0,
+        geom.Rback  + geom.NbThickness,
+        geom.coneLength/2.0,
+        0.*deg,
+        360.*deg
+    );
+
+    //------------------------------------------
+    // Nb hemisphere
+    //------------------------------------------
+
+    auto nbSphere =
+    new G4Sphere(
+        "NbSphere",
+        0.0,
+        geom.sphereRadius + geom.NbThickness,
+        0.*deg,
+        360.*deg,
+        0.*deg,
+        90.*deg
+    );
+
+    //------------------------------------------
+    // Nb outer body
+    //------------------------------------------
+
+    geom.nbOuterSolid =
+    new G4UnionSolid(
+        "NbOuter",
+        nbCone,
+        nbSphere,
+        nullptr,
+        G4ThreeVector(
+            0.0,
+            0.0,
+            geom.coneLength/2.0
+        )
+    );
+
+    return geom;
 }
 
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......

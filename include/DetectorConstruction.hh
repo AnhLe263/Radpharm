@@ -31,6 +31,7 @@
 
 #include "G4VUserDetectorConstruction.hh"
 #include "G4UnionSolid.hh"
+#include "G4SystemOfUnits.hh"
 
 class G4VPhysicalVolume;
 class G4LogicalVolume;
@@ -39,6 +40,23 @@ class G4Material;
 class G4UserLimits;
 
 /// Detector construction class to define materials and geometry.
+
+struct ConicalTargetGeometry
+{
+  G4VSolid* liquidSolid = nullptr;
+  G4VSolid* nbOuterSolid = nullptr;
+
+  G4double Rfront = 0.0;
+  G4double Rback = 0.0;
+
+  G4double coneLength = 0.0;
+  G4double sphereRadius = 0.0;
+
+  G4double totalLength = 0.0;
+
+  G4double NbThickness = 0.0;
+};
+
 
 class DetectorConstruction : public G4VUserDetectorConstruction
 {
@@ -52,6 +70,7 @@ class DetectorConstruction : public G4VUserDetectorConstruction
 
   protected:
     void ConstructTargetChamber();
+    ConicalTargetGeometry BuildConicalLiquidTarget();
     G4UnionSolid* BuildSolidUnionTwo(G4double h, G4double r);
     G4Material* DefineLiquidTargetMaterial();
     G4Material* DefineHavarMaterial();
@@ -69,6 +88,8 @@ class DetectorConstruction : public G4VUserDetectorConstruction
     G4String fConcentration = "0.05M";
     G4double fTargetHNO3Molarity = 0;//same as fConcentration but double type
     G4String fCSVFileName = "";
+    G4String fBeamEntranceWindowMatName = "havar";
+    G4double fBeamEntranceWindowThickness = 35.0 *um;
     
 };
 
